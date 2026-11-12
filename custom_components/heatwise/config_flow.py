@@ -69,7 +69,7 @@ def _temp(min_v: float = 5, max_v: float = 30, step: float = 0.5) -> selector.Nu
     )
 
 
-def _number(min_v: float, max_v: float, step: float) -> selector.NumberSelector:
+def _number(min_v: float, max_v: float, step: float | str) -> selector.NumberSelector:
     return selector.NumberSelector(
         selector.NumberSelectorConfig(min=min_v, max=max_v, step=step, mode=selector.NumberSelectorMode.BOX)
     )
@@ -145,9 +145,9 @@ def hybrid_schema(values: dict[str, Any]) -> vol.Schema:
             _req(CONF_AC_MIN_OUTDOOR, values, DEFAULT_AC_MIN_OUTDOOR): _temp(-30, 10),
             _req(CONF_AC_OFFSET, values, DEFAULT_AC_OFFSET): _number(0, 6, 0.5),
             _opt(CONF_GAS_PRICE_ENTITY, values): SENSOR,
-            _opt(CONF_GAS_PRICE, values): _number(0, 100, 0.0001),
+            _opt(CONF_GAS_PRICE, values): _number(0, 100, "any"),
             _opt(CONF_EL_PRICE_ENTITY, values): SENSOR,
-            _opt(CONF_EL_PRICE, values): _number(0, 100, 0.0001),
+            _opt(CONF_EL_PRICE, values): _number(0, 100, "any"),
             _req(CONF_BOILER_EFFICIENCY, values, DEFAULT_BOILER_EFFICIENCY): _number(0.5, 1.1, 0.01),
             _req(CONF_COP_AT_7, values, DEFAULT_COP_AT_7): _number(1.5, 7, 0.1),
         }

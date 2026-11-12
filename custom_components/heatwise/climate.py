@@ -18,6 +18,8 @@ from . import HeatWiseConfigEntry, engine
 from .const import CONF_BOILER, CONF_ZONE_ACS, CONF_ZONE_ID, CONF_ZONE_TRVS, HOUSE_ZONE_ID
 from .entity import HeatWiseEntity
 
+_NATIVE = hasattr(ClimateEntity, "native_target_temperature")
+
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: HeatWiseConfigEntry, async_add_entities: AddEntitiesCallback
@@ -41,20 +43,21 @@ class HeatWiseClimate(HeatWiseEntity, ClimateEntity):
         | ClimateEntityFeature.TURN_ON
         | ClimateEntityFeature.TURN_OFF
     )
-    _attr_target_temperature_step = 0.5
-    _attr_min_temp = 5
-    _attr_max_temp = 30
 
     def __init__(self, controller, zone_id: str) -> None:
         super().__init__(controller, zone_id, "climate")
-        self._attr_temperature_unit = controller.hass.config.units.temperature_unit or UnitOfTemperature.CELSIUS
+        unit = controller.hass.config.units.temperature_unit or UnitOfTemperature.CELSIUS
+        if _NATIVE:
+            self._attr_native_temperature_unit = unit
+        else:
+            self._attr_temperature_unit = unit
 
     @property
-    def current_temperature(self) -> float | None:
+    def native_current_temperature(self) -> float | None:
         return self.controller.room_temperature(self.zone_id)
 
     @property
-    def target_temperature(self) -> float | None:
+    def native_target_temperature(self) -> float | None:
         plan = self.controller.plan
         if plan is None:
             return None
@@ -127,3 +130,17 @@ class HeatWiseClimate(HeatWiseEntity, ClimateEntity):
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         self.controller.set_enabled(self.zone_id, hvac_mode != HVACMode.OFF)
+
+
+# Home Assistant 2026.11 moved climate temperatures to native_* properties.
+# Older versions read the plain names, so map them there.
+if _NATIVE:
+    HeatWiseClimate._attr_native_target_temperature_step = 0.5
+    HeatWiseClimate._attr_native_min_temp = 5
+    HeatWiseClimate._attr_native_max_temp = 30
+else:
+    HeatWiseClimate.current_temperature = HeatWiseClimate.native_current_temperature
+    HeatWiseClimate.target_temperature = HeatWiseClimate.native_target_temperature
+    HeatWiseClimate._attr_target_temperature_step = 0.5
+    HeatWiseClimate._attr_min_temp = 5
+    HeatWiseClimate._attr_max_temp = 30

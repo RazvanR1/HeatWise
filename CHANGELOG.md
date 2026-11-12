@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 - 2026-11-12
+
+- Fix: the "Air conditioner and prices" options page did not open
+- Use the native climate temperature properties on Home Assistant 2026.11+
+
 ## 0.1.0 - 2026-11-12
 
 First release.

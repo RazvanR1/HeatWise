@@ -156,3 +156,24 @@ async def test_manual_change_is_kept(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
     assert controller.plan.house_reason == "manual"
     assert controller.plan.boiler_target == 23
+
+
+async def test_every_options_page_opens(hass: HomeAssistant) -> None:
+    """Each options form must serialize (the UI rejects invalid selectors)."""
+    import voluptuous_serialize
+    from homeassistant.helpers import config_validation as cv
+
+    _thermostat(hass, TRV, 18, 18)
+    entry = await _setup(
+        hass,
+        {
+            "comfort_temp": 21, "eco_temp": 18, "away_temp": 16, "frost_temp": 7,
+            "zones": [{"zone_id": "k1", "zone_name": "Kitchen", "trvs": [TRV], "trv_follow_boiler": False}],
+        },
+    )
+    for step in ("house", "hybrid", "power", "add_zone", "edit_zone", "remove_zone"):
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(result["flow_id"], {"next_step_id": step})
+        assert result["type"] is FlowResultType.FORM, step
+        voluptuous_serialize.convert(result["data_schema"], custom_serializer=cv.custom_serializer)
+        hass.config_entries.options.async_abort(result["flow_id"])
