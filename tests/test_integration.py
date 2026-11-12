@@ -177,3 +177,18 @@ async def test_every_options_page_opens(hass: HomeAssistant) -> None:
         assert result["type"] is FlowResultType.FORM, step
         voluptuous_serialize.convert(result["data_schema"], custom_serializer=cv.custom_serializer)
         hass.config_entries.options.async_abort(result["flow_id"])
+
+
+async def test_empty_house_at_start_is_away(hass: HomeAssistant) -> None:
+    hass.states.async_set("person.a", "Work")
+    entry = await _setup(
+        hass,
+        {"persons": ["person.a"], "comfort_temp": 21, "eco_temp": 18, "away_temp": 16, "frost_temp": 7},
+    )
+    await _tick(hass)
+    assert entry.runtime_data.plan.house_reason == "away"
+    hass.states.async_set("person.a", "home")
+    await hass.async_block_till_done()
+    await _tick(hass)
+    assert entry.runtime_data.anyone_home is True
+    assert entry.runtime_data.plan.house_reason == "home"

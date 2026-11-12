@@ -127,6 +127,7 @@ class HeatWiseController:
         self.burner_on_since: datetime | None = None
         self.anyone_home: bool | None = None
         self._nobody_since: datetime | None = None
+        self._started = dt_util.utcnow()
         self._last_sent: dict[str, tuple[float, datetime]] = {}
         self._unsubs: list = []
         self._debounce_unsub = None
@@ -501,6 +502,9 @@ class HeatWiseController:
         now = dt_util.utcnow()
         if self._nobody_since is None:
             self._nobody_since = max(s.last_changed for s in known)
+            if self._nobody_since <= self._started + timedelta(seconds=30):
+                # Already empty when HeatWise (or Home Assistant) started.
+                return False
         delay = timedelta(minutes=int(self.config.get(CONF_AWAY_DELAY, DEFAULT_AWAY_DELAY)))
         return False if now - self._nobody_since >= delay else True
 
