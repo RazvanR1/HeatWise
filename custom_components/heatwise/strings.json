@@ -1,0 +1,200 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up HeatWise",
+        "description": "Only the name is required. Everything else is optional and can be changed later.",
+        "data": {
+          "name": "Name",
+          "boiler_entity": "Main thermostat (boiler)",
+          "house_temp_sensor": "House temperature sensor",
+          "outdoor_sensor": "Outdoor temperature (sensor or weather)",
+          "persons": "People",
+          "schedule_entity": "Schedule (on = comfort, off = eco)",
+          "window_sensors": "Window sensors",
+          "comfort_temp": "Comfort temperature",
+          "eco_temp": "Eco temperature",
+          "away_temp": "Away temperature",
+          "frost_temp": "Frost protection"
+        },
+        "data_description": {
+          "boiler_entity": "Optional. Leave empty for a house heated only by air conditioners.",
+          "house_temp_sensor": "Optional. Without it the thermostat's own reading is used.",
+          "persons": "Optional. Without people HeatWise assumes someone is home.",
+          "schedule_entity": "Optional. A Schedule helper works best. Without it: comfort while someone is home."
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "HeatWise",
+        "description": "What do you want to change?",
+        "menu_options": {
+          "house": "House",
+          "hybrid": "Air conditioner and prices",
+          "power": "Boiler power plug",
+          "add_zone": "Add a zone",
+          "edit_zone": "Edit a zone",
+          "remove_zone": "Remove a zone"
+        }
+      },
+      "house": {
+        "title": "House",
+        "data": {
+          "boiler_entity": "Main thermostat (boiler)",
+          "house_temp_sensor": "House temperature sensor",
+          "outdoor_sensor": "Outdoor temperature (sensor or weather)",
+          "persons": "People",
+          "schedule_entity": "Schedule (on = comfort, off = eco)",
+          "window_sensors": "Window sensors",
+          "comfort_temp": "Comfort temperature",
+          "eco_temp": "Eco temperature",
+          "away_temp": "Away temperature",
+          "frost_temp": "Frost protection",
+          "warm_off_threshold": "Stop heating above this outdoor temperature",
+          "away_delay": "Away after (minutes)",
+          "override_minutes": "Keep manual changes for (minutes)"
+        },
+        "data_description": {
+          "boiler_entity": "Optional. Leave empty for a house heated only by air conditioners.",
+          "house_temp_sensor": "Optional. Without it the thermostat's own reading is used.",
+          "persons": "Optional. Without people HeatWise assumes someone is home.",
+          "schedule_entity": "Optional. A Schedule helper works best. Without it: comfort while someone is home."
+        }
+      },
+      "hybrid": {
+        "title": "Air conditioner and prices",
+        "description": "HeatWise picks the cheaper source when both prices are known, otherwise it uses the outdoor threshold. Gas billed in m³: 1 m³ ≈ 10.5 kWh.",
+        "data": {
+          "hybrid_mode": "Heat source",
+          "ac_threshold": "Use the AC above this outdoor temperature (without prices)",
+          "ac_min_outdoor": "Never use the AC below",
+          "ac_offset": "AC setpoint above the target",
+          "gas_price_entity": "Gas price sensor (per kWh)",
+          "gas_price": "Gas price per kWh (if no sensor)",
+          "electricity_price_entity": "Electricity price sensor (per kWh)",
+          "electricity_price": "Electricity price per kWh (if no sensor)",
+          "boiler_efficiency": "Boiler efficiency",
+          "cop_at_7": "AC efficiency (COP) at 7 °C"
+        }
+      },
+      "power": {
+        "title": "Boiler power plug",
+        "description": "A smart plug with power measurement on the boiler shows when the burner runs and for how long.",
+        "data": {
+          "boiler_power_sensor": "Boiler power sensor",
+          "burner_threshold": "Burner on above (W)"
+        }
+      },
+      "add_zone": {
+        "title": "Add a zone",
+        "description": "A zone needs at least radiator valves or an air conditioner.",
+        "data": {
+          "zone_name": "Zone name",
+          "temp_sensor": "Room temperature sensor",
+          "trvs": "Radiator valves (TRV)",
+          "acs": "Air conditioners",
+          "window_sensors": "Window sensors",
+          "schedule_entity": "Own schedule (empty = follow the house)",
+          "comfort_temp": "Comfort (empty = house)",
+          "eco_temp": "Eco (empty = house)",
+          "away_temp": "Away (empty = house)",
+          "trv_follow_boiler": "Valves copy the main thermostat"
+        }
+      },
+      "zone": {
+        "title": "Edit a zone",
+        "description": "A zone needs at least radiator valves or an air conditioner.",
+        "data": {
+          "zone_name": "Zone name",
+          "temp_sensor": "Room temperature sensor",
+          "trvs": "Radiator valves (TRV)",
+          "acs": "Air conditioners",
+          "window_sensors": "Window sensors",
+          "schedule_entity": "Own schedule (empty = follow the house)",
+          "comfort_temp": "Comfort (empty = house)",
+          "eco_temp": "Eco (empty = house)",
+          "away_temp": "Away (empty = house)",
+          "trv_follow_boiler": "Valves copy the main thermostat"
+        }
+      },
+      "edit_zone": {
+        "title": "Edit a zone",
+        "data": {
+          "zone_id": "Zone"
+        }
+      },
+      "remove_zone": {
+        "title": "Remove a zone",
+        "data": {
+          "zone_id": "Zone"
+        }
+      }
+    },
+    "error": {
+      "zone_needs_device": "Add at least one radiator valve or air conditioner."
+    }
+  },
+  "selector": {
+    "hybrid_mode": {
+      "options": {
+        "auto": "Automatic (cheapest / outdoor temperature)",
+        "boiler_only": "Boiler only",
+        "ac_only": "Air conditioner only"
+      }
+    }
+  },
+  "entity": {
+    "climate": {
+      "heatwise": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "schedule": "Schedule",
+              "comfort": "Comfort",
+              "eco": "Eco",
+              "away": "Away",
+              "boost": "Boost"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "decision": {
+        "name": "Decision"
+      },
+      "boiler_target": {
+        "name": "Main thermostat target"
+      },
+      "heat_source": {
+        "name": "Heat source",
+        "state": {
+          "boiler": "Boiler",
+          "ac": "Air conditioner"
+        }
+      },
+      "burner_runtime": {
+        "name": "Burner runtime today"
+      }
+    },
+    "binary_sensor": {
+      "burner_running": {
+        "name": "Burner running"
+      },
+      "anyone_home": {
+        "name": "Anyone home"
+      }
+    },
+    "switch": {
+      "control": {
+        "name": "HeatWise control"
+      },
+      "use_ac": {
+        "name": "Heat with air conditioners"
+      }
+    }
+  }
+}

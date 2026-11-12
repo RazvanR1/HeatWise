@@ -1,0 +1,200 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurează HeatWise",
+        "description": "Doar numele e obligatoriu. Restul e opțional și se poate schimba oricând.",
+        "data": {
+          "name": "Nume",
+          "boiler_entity": "Termostatul principal (centrala)",
+          "house_temp_sensor": "Senzor de temperatură al casei",
+          "outdoor_sensor": "Temperatura de afară (senzor sau vreme)",
+          "persons": "Persoane",
+          "schedule_entity": "Program (pornit = confort, oprit = eco)",
+          "window_sensors": "Senzori de fereastră",
+          "comfort_temp": "Temperatura confort",
+          "eco_temp": "Temperatura eco",
+          "away_temp": "Temperatura plecat",
+          "frost_temp": "Protecție la îngheț"
+        },
+        "data_description": {
+          "boiler_entity": "Opțional. Lasă gol pentru o casă încălzită doar cu aer condiționat.",
+          "house_temp_sensor": "Opțional. Fără el se folosește temperatura citită de termostat.",
+          "persons": "Opțional. Fără persoane, HeatWise consideră că e cineva acasă.",
+          "schedule_entity": "Opțional. Merge cel mai bine un ajutor Program (Schedule). Fără el: confort cât e cineva acasă."
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "HeatWise",
+        "description": "Ce vrei să schimbi?",
+        "menu_options": {
+          "house": "Casa",
+          "hybrid": "Aer condiționat și prețuri",
+          "power": "Priza centralei",
+          "add_zone": "Adaugă o zonă",
+          "edit_zone": "Modifică o zonă",
+          "remove_zone": "Șterge o zonă"
+        }
+      },
+      "house": {
+        "title": "Casa",
+        "data": {
+          "boiler_entity": "Termostatul principal (centrala)",
+          "house_temp_sensor": "Senzor de temperatură al casei",
+          "outdoor_sensor": "Temperatura de afară (senzor sau vreme)",
+          "persons": "Persoane",
+          "schedule_entity": "Program (pornit = confort, oprit = eco)",
+          "window_sensors": "Senzori de fereastră",
+          "comfort_temp": "Temperatura confort",
+          "eco_temp": "Temperatura eco",
+          "away_temp": "Temperatura plecat",
+          "frost_temp": "Protecție la îngheț",
+          "warm_off_threshold": "Oprește încălzirea peste această temperatură afară",
+          "away_delay": "Plecat după (minute)",
+          "override_minutes": "Păstrează modificările manuale (minute)"
+        },
+        "data_description": {
+          "boiler_entity": "Opțional. Lasă gol pentru o casă încălzită doar cu aer condiționat.",
+          "house_temp_sensor": "Opțional. Fără el se folosește temperatura citită de termostat.",
+          "persons": "Opțional. Fără persoane, HeatWise consideră că e cineva acasă.",
+          "schedule_entity": "Opțional. Merge cel mai bine un ajutor Program (Schedule). Fără el: confort cât e cineva acasă."
+        }
+      },
+      "hybrid": {
+        "title": "Aer condiționat și prețuri",
+        "description": "HeatWise alege sursa mai ieftină când știe ambele prețuri, altfel folosește pragul de temperatură de afară. Gaz facturat în m³: 1 m³ ≈ 10,5 kWh.",
+        "data": {
+          "hybrid_mode": "Sursa de căldură",
+          "ac_threshold": "Folosește AC-ul peste această temperatură afară (fără prețuri)",
+          "ac_min_outdoor": "Nu folosi niciodată AC-ul sub",
+          "ac_offset": "Cu cât setează AC-ul peste țintă",
+          "gas_price_entity": "Senzor preț gaz (per kWh)",
+          "gas_price": "Preț gaz per kWh (dacă nu ai senzor)",
+          "electricity_price_entity": "Senzor preț curent (per kWh)",
+          "electricity_price": "Preț curent per kWh (dacă nu ai senzor)",
+          "boiler_efficiency": "Randamentul centralei",
+          "cop_at_7": "Eficiența AC-ului (COP) la 7 °C"
+        }
+      },
+      "power": {
+        "title": "Priza centralei",
+        "description": "O priză inteligentă cu măsurare pe centrală arată când arde arzătorul și cât timp.",
+        "data": {
+          "boiler_power_sensor": "Senzor de putere al centralei",
+          "burner_threshold": "Arzător pornit peste (W)"
+        }
+      },
+      "add_zone": {
+        "title": "Adaugă o zonă",
+        "description": "O zonă are nevoie de cel puțin un cap termostatic sau un aer condiționat.",
+        "data": {
+          "zone_name": "Numele zonei",
+          "temp_sensor": "Senzor de temperatură al camerei",
+          "trvs": "Capete termostatice (TRV)",
+          "acs": "Aere condiționate",
+          "window_sensors": "Senzori de fereastră",
+          "schedule_entity": "Program propriu (gol = urmează casa)",
+          "comfort_temp": "Confort (gol = ca la casă)",
+          "eco_temp": "Eco (gol = ca la casă)",
+          "away_temp": "Plecat (gol = ca la casă)",
+          "trv_follow_boiler": "Capetele copiază termostatul principal"
+        }
+      },
+      "zone": {
+        "title": "Modifică o zonă",
+        "description": "O zonă are nevoie de cel puțin un cap termostatic sau un aer condiționat.",
+        "data": {
+          "zone_name": "Numele zonei",
+          "temp_sensor": "Senzor de temperatură al camerei",
+          "trvs": "Capete termostatice (TRV)",
+          "acs": "Aere condiționate",
+          "window_sensors": "Senzori de fereastră",
+          "schedule_entity": "Program propriu (gol = urmează casa)",
+          "comfort_temp": "Confort (gol = ca la casă)",
+          "eco_temp": "Eco (gol = ca la casă)",
+          "away_temp": "Plecat (gol = ca la casă)",
+          "trv_follow_boiler": "Capetele copiază termostatul principal"
+        }
+      },
+      "edit_zone": {
+        "title": "Modifică o zonă",
+        "data": {
+          "zone_id": "Zona"
+        }
+      },
+      "remove_zone": {
+        "title": "Șterge o zonă",
+        "data": {
+          "zone_id": "Zona"
+        }
+      }
+    },
+    "error": {
+      "zone_needs_device": "Adaugă cel puțin un cap termostatic sau un aer condiționat."
+    }
+  },
+  "selector": {
+    "hybrid_mode": {
+      "options": {
+        "auto": "Automat (cel mai ieftin / temperatura de afară)",
+        "boiler_only": "Doar centrala",
+        "ac_only": "Doar aerul condiționat"
+      }
+    }
+  },
+  "entity": {
+    "climate": {
+      "heatwise": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "schedule": "Program",
+              "comfort": "Confort",
+              "eco": "Eco",
+              "away": "Plecat",
+              "boost": "Boost"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "decision": {
+        "name": "Decizie"
+      },
+      "boiler_target": {
+        "name": "Ținta termostatului principal"
+      },
+      "heat_source": {
+        "name": "Sursa de căldură",
+        "state": {
+          "boiler": "Centrala",
+          "ac": "Aer condiționat"
+        }
+      },
+      "burner_runtime": {
+        "name": "Timp de funcționare arzător azi"
+      }
+    },
+    "binary_sensor": {
+      "burner_running": {
+        "name": "Arzător pornit"
+      },
+      "anyone_home": {
+        "name": "E cineva acasă"
+      }
+    },
+    "switch": {
+      "control": {
+        "name": "Control HeatWise"
+      },
+      "use_ac": {
+        "name": "Încălzire cu aerul condiționat"
+      }
+    }
+  }
+}
