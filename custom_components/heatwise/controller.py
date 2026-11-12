@@ -126,8 +126,7 @@ class HeatWiseController:
         self.burner_seconds = 0.0
         self.burner_on_since: datetime | None = None
         self.anyone_home: bool | None = None
-        self._nobody_since: datetime | None = None
-        self._started = dt_util.utcnow()
+        self._departed_at: datetime | None = None
         self._last_sent: dict[str, tuple[float, datetime]] = {}
         self._unsubs: list = []
         self._debounce_unsub = None
@@ -277,6 +276,9 @@ class HeatWiseController:
         old: State | None = event.data.get("old_state")
         new: State | None = event.data.get("new_state")
         c = self.config
+        if entity_id in c.get(CONF_PERSONS, []):
+            if old is not None and new is not None and old.state == "home" and new.state != "home":
+                self._departed_at = dt_util.utcnow()
         if entity_id == c.get(CONF_BOILER_POWER):
             self._track_burner(new)
         elif entity_id == c.get(CONF_BOILER):
@@ -497,16 +499,12 @@ class HeatWiseController:
         if not known:
             return None
         if any(s.state == "home" for s in known):
-            self._nobody_since = None
+            self._departed_at = None
             return True
-        now = dt_util.utcnow()
-        if self._nobody_since is None:
-            self._nobody_since = max(s.last_changed for s in known)
-            if self._nobody_since <= self._started + timedelta(seconds=30):
-                # Already empty when HeatWise (or Home Assistant) started.
-                return False
+        if self._departed_at is None:
+            return False
         delay = timedelta(minutes=int(self.config.get(CONF_AWAY_DELAY, DEFAULT_AWAY_DELAY)))
-        return False if now - self._nobody_since >= delay else True
+        return dt_util.utcnow() - self._departed_at < delay
 
     def room_temperature(self, zone_id: str) -> float | None:
         if zone_id == HOUSE_ZONE_ID:

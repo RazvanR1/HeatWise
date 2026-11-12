@@ -192,3 +192,19 @@ async def test_empty_house_at_start_is_away(hass: HomeAssistant) -> None:
     await _tick(hass)
     assert entry.runtime_data.anyone_home is True
     assert entry.runtime_data.plan.house_reason == "home"
+
+
+async def test_away_delay_after_leaving(hass: HomeAssistant, freezer) -> None:
+    hass.states.async_set("person.a", "home")
+    entry = await _setup(
+        hass,
+        {"persons": ["person.a"], "away_delay": 10, "comfort_temp": 21, "eco_temp": 18, "away_temp": 16, "frost_temp": 7},
+    )
+    await _tick(hass)
+    hass.states.async_set("person.a", "not_home")
+    await hass.async_block_till_done()
+    await _tick(hass, 60)
+    assert entry.runtime_data.anyone_home is True  # still inside the delay
+    freezer.tick(timedelta(minutes=11))
+    await _tick(hass, 60)
+    assert entry.runtime_data.anyone_home is False
