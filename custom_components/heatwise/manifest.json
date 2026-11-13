@@ -1,13 +1,20 @@
 {
   "domain": "heatwise",
   "name": "HeatWise",
-  "codeowners": ["@RazvanR1"],
+  "codeowners": [
+    "@RazvanR1"
+  ],
   "config_flow": true,
-  "dependencies": [],
+  "dependencies": [
+    "frontend",
+    "http",
+    "panel_custom",
+    "websocket_api"
+  ],
   "documentation": "https://github.com/RazvanR1/HeatWise",
   "integration_type": "service",
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/RazvanR1/HeatWise/issues",
   "requirements": [],
-  "version": "0.1.3"
+  "version": "0.2.0"
 }

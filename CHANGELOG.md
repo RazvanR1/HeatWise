@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0 - 2026-11-13
+
+- New HeatWise panel in the sidebar: the house and every room with temperatures, targets and presets, why HeatWise decided what it did, the heat source, burner time, the AC/gas cost comparison and a 24 hour chart. Switch between "in control" and "observe only" from it. English and Romanian
+
 ## 0.1.3 - 2026-11-12
 
 - The away delay starts only when someone actually leaves home; an empty house at start-up is away right away

@@ -32,6 +32,7 @@ Home Assistant.
 - **Priză pe centrală (opțional):** arată când arde arzătorul și cât a mers azi.
 - **Mod doar observă:** oprești comutatorul *Control HeatWise* și îți arată ce
   ar face, fără să atingă vreun aparat. Ideal ca să-l încerci lângă ce ai acum.
+- **Panou propriu în bara laterală:** toate camerele dintr-o privire, preseturi și temperaturi, sursa de căldură, timpul arzătorului și un grafic pe 24 de ore.
 - **Se explică:** senzorul *Decizie* spune pe înțelesul tuturor de ce casa are
   temperatura pe care o are. Engleză și română.
 

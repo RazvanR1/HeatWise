@@ -37,6 +37,7 @@ It works with any thermostat, valve or AC that Home Assistant can see.
 - **Observe-only mode:** turn off the *HeatWise control* switch and it shows
   what it would do without touching any device. Ideal for trying it next to
   your current setup.
+- **Its own panel in the sidebar:** every room at a glance, presets and temperatures, the heat source, burner time and a 24 hour chart.
 - **Explains itself:** a *Decision* sensor says in plain words why the house is
   at the temperature it is. English and Romanian.
 

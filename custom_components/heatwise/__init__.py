@@ -8,6 +8,7 @@ from homeassistant.helpers import device_registry as dr
 
 from .const import CONF_ZONE_ID, DOMAIN, HOUSE_ZONE_ID, PLATFORMS
 from .controller import HeatWiseController
+from .panel import async_remove_panel_if_unused, async_setup_panel
 
 type HeatWiseConfigEntry = ConfigEntry[HeatWiseController]
 
@@ -19,6 +20,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: HeatWiseConfigEntry) -> 
     _remove_stale_zone_devices(hass, entry, controller)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     await controller.async_setup()
+    await async_setup_panel(hass)
     entry.async_on_unload(entry.add_update_listener(_async_reload))
     return True
 
@@ -26,6 +28,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: HeatWiseConfigEntry) -> 
 async def async_unload_entry(hass: HomeAssistant, entry: HeatWiseConfigEntry) -> bool:
     """Unload a HeatWise house."""
     await entry.runtime_data.async_unload()
+    async_remove_panel_if_unused(hass, entry.entry_id)
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 

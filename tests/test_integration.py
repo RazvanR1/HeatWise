@@ -208,3 +208,32 @@ async def test_away_delay_after_leaving(hass: HomeAssistant, freezer) -> None:
     freezer.tick(timedelta(minutes=11))
     await _tick(hass, 60)
     assert entry.runtime_data.anyone_home is False
+
+
+async def test_panel_and_status_api(hass: HomeAssistant, hass_ws_client) -> None:
+    from homeassistant.components import frontend
+
+    _thermostat(hass, BOILER, 21, 19.5)
+    _thermostat(hass, TRV, 18, 18)
+    entry = await _setup(
+        hass,
+        {
+            "boiler_entity": BOILER, "comfort_temp": 21, "eco_temp": 18, "away_temp": 16, "frost_temp": 7,
+            "zones": [{"zone_id": "k1", "zone_name": "Kitchen", "trvs": [TRV], "trv_follow_boiler": True}],
+        },
+    )
+    await _tick(hass)
+    assert "heatwise" in hass.data[frontend.DATA_PANELS]
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "heatwise/status"})
+    msg = await client.receive_json()
+    assert msg["success"]
+    house = msg["result"]["houses"][0]
+    assert house["name"] == "Home"
+    assert [z["climate"] for z in house["zones"]] == ["climate.heatwise_home", "climate.heatwise_kitchen"]
+    assert house["zones"][1]["kind"] == "trv"
+    assert house["entities"]["control"] == "switch.heatwise_home_heatwise_control"
+
+    await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert "heatwise" not in hass.data[frontend.DATA_PANELS]

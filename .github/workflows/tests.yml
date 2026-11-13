@@ -14,5 +14,8 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install -r requirements_test.txt
+      - name: Install the Home Assistant frontend matching the test version
+        run: |
+          pip install "$(python -c "import importlib.util, json, pathlib; base = pathlib.Path(importlib.util.find_spec('homeassistant').submodule_search_locations[0]); print(json.loads((base / 'components/frontend/manifest.json').read_text())['requirements'][0])")"
       - run: ruff check custom_components tests --select E,F,W,B,UP --ignore E501
       - run: pytest -q
