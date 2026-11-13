@@ -1,5 +1,10 @@
 # HeatWise
 
+[![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
+![Version](https://img.shields.io/badge/version-0.2.1-blue)
+![Local only](https://img.shields.io/badge/cloud-none-success)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-support-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/razvanr1)
+
 **English** | [Română](README.ro.md)
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
@@ -60,11 +65,17 @@ The panel follows the language of your Home Assistant profile (English or Romani
 
 ## Install
 
-1. In HACS (the **Marketplace** in Home Assistant 2026.11+): ⋮ → **Custom
-   repositories** → `https://github.com/RazvanR1/HeatWise`, type
-   **Integration**. Install **HeatWise** and restart Home Assistant.
+1. Click the button to open HeatWise in HACS (the **Marketplace** in Home
+   Assistant 2026.11+), install it and restart Home Assistant:
+
+   [![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
+
+   Or add it by hand: ⋮ → **Custom repositories** →
+   `https://github.com/RazvanR1/HeatWise`, type **Integration**.
    Without HACS, copy `custom_components/heatwise` into `config/custom_components`.
-2. **Settings → Devices & services → Add integration → HeatWise.**
+2. Add HeatWise with this button, or **Settings → Devices & services → Add integration → HeatWise**:
+
+   [![Open your Home Assistant instance and start setting up HeatWise.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=heatwise)
 3. Pick what you have: the main thermostat, an outdoor sensor, the people,
    a schedule. You can leave anything empty.
 4. Open the integration's **Configure** menu to add zones (valves, air

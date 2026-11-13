@@ -1,5 +1,10 @@
 # HeatWise
 
+[![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
+![Version](https://img.shields.io/badge/version-0.2.1-blue)
+![Local only](https://img.shields.io/badge/cloud-none-success)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-support-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/razvanr1)
+
 [English](README.md) | **Română**
 
 **Încălzire inteligentă pentru Home Assistant, care decide și _cu ce_ încălzește.**
@@ -55,11 +60,17 @@ Panoul folosește limba din profilul tău Home Assistant (română sau engleză)
 
 ## Instalare
 
-1. În HACS (**Marketplace** din Home Assistant 2026.11+): ⋮ → **Custom
-   repositories** → `https://github.com/RazvanR1/HeatWise`, tip
-   **Integration**. Instalează **HeatWise** și repornește Home Assistant.
+1. Apasă butonul ca să deschizi HeatWise în HACS (**Marketplace** din Home
+   Assistant 2026.11+), instalează-l și repornește Home Assistant:
+
+   [![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
+
+   Sau adaugă-l de mână: ⋮ → **Custom repositories** →
+   `https://github.com/RazvanR1/HeatWise`, tip **Integration**.
    Fără HACS, copiază `custom_components/heatwise` în `config/custom_components`.
-2. **Setări → Dispozitive și servicii → Adaugă integrare → HeatWise.**
+2. Adaugă HeatWise cu acest buton sau din **Setări → Dispozitive și servicii → Adaugă integrare → HeatWise**:
+
+   [![Open your Home Assistant instance and start setting up HeatWise.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=heatwise)
 3. Alege ce ai: termostatul principal, senzorul de afară, persoanele, un
    program. Poți lăsa orice gol.
 4. Din meniul **Configurează** al integrării adaugi zone (capete, AC-uri),
