@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1 - 2026-11-13
+
+- Panel: fewer time labels on the chart on phones so they do not overlap
+- README: screenshots of the panel
+
 ## 0.2.0 - 2026-11-13
 
 - New HeatWise panel in the sidebar: the house and every room with temperatures, targets and presets, why HeatWise decided what it did, the heat source, burner time, the AC/gas cost comparison and a 24 hour chart. Switch between "in control" and "observe only" from it. English and Romanian

@@ -14,6 +14,8 @@ On a mild day it heats the rooms with the air conditioners and lets the boiler
 rest; when it gets cold, or gas is cheaper, it hands the job back to the boiler.
 It works with any thermostat, valve or AC that Home Assistant can see.
 
+![HeatWise panel](docs/screenshots/panel.png)
+
 ## What it does
 
 - **Picks the cheapest heat source.** Give it your gas and electricity prices
@@ -42,6 +44,19 @@ It works with any thermostat, valve or AC that Home Assistant can see.
   at the temperature it is. English and Romanian.
 
 Everything except the name is optional: one thermostat is enough to start.
+
+## The panel
+
+HeatWise adds its own page to the Home Assistant sidebar. Everything is there:
+the house and every room, presets and temperatures, why HeatWise decided what
+it did, the heat source, burner time, the cost of heat from gas and from the
+AC, and the last 24 hours.
+
+| On a mild day the ACs take over (light theme) | On a phone |
+|---|---|
+| ![Air conditioners heating, light theme](docs/screenshots/hybrid.png) | <img src="docs/screenshots/mobile.png" width="260" alt="HeatWise on a phone"> |
+
+The panel follows the language of your Home Assistant profile (English or Romanian).
 
 ## Install
 

@@ -11,6 +11,8 @@ lasă centrala să stea; când se face frig sau gazul e mai ieftin, predă din n
 centralei. Merge cu orice termostat, cap termostatic sau AC pe care îl vede
 Home Assistant.
 
+![Panoul HeatWise](docs/screenshots/panel-ro.png)
+
 ## Ce face
 
 - **Alege sursa cea mai ieftină.** Îi dai prețul la gaz și la curent (valori
@@ -37,6 +39,19 @@ Home Assistant.
   temperatura pe care o are. Engleză și română.
 
 Totul în afară de nume e opțional: un singur termostat ajunge ca să începi.
+
+## Panoul
+
+HeatWise are pagina lui în bara laterală din Home Assistant. Acolo găsești tot:
+casa și fiecare cameră, preseturi și temperaturi, de ce a decis așa, sursa de
+căldură, cât a mers arzătorul, cât costă căldura din gaz și din AC și ultimele
+24 de ore.
+
+| Într-o zi blândă preiau AC-urile (temă deschisă) | Pe telefon |
+|---|---|
+| ![Încălzire cu AC, temă deschisă](docs/screenshots/hybrid.png) | <img src="docs/screenshots/mobile.png" width="260" alt="HeatWise pe telefon"> |
+
+Panoul folosește limba din profilul tău Home Assistant (română sau engleză).
 
 ## Instalare
 

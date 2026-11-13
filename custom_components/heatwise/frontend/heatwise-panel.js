@@ -508,7 +508,7 @@ class HeatWisePanel extends HTMLElement {
       yl.push(`<span class="ylab" style="top:${((Y(v) / H) * 100).toFixed(2)}%">${v}°</span>`);
     }
     const xl = [];
-    for (let k = 0; k <= 4; k++) {
+    for (let k = 0; k <= 4; k += this._narrow ? 2 : 1) {
       const ts = x0 + (k * (now - x0)) / 4;
       const label = new Date(ts).toLocaleTimeString(this._hass.language || undefined, { hour: "2-digit", minute: "2-digit" });
       xl.push(`<span class="xlab" style="left:${k * 25}%">${label}</span>`);
