@@ -1,7 +1,7 @@
 # 🌡️ HeatWise – încălzire inteligentă și hibridă pentru Home Assistant
 
 [![Deschide Home Assistant și arată acest repository în HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
-![Version](https://img.shields.io/badge/version-0.2.1-blue)
+![Version](https://img.shields.io/badge/version-0.3.0-blue)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 ![Local only](https://img.shields.io/badge/cloud-none-success)
 [![Tests](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml/badge.svg)](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml)
@@ -31,6 +31,7 @@ sau AC pe care îl vede Home Assistant, și totul rulează local.
 | ✋ **Respectă modificările manuale** | Schimbi un termostat de mână și modificarea rămâne cât timp alegi tu sau până la următorul pas din program. |
 | 🪟 **Ferestre și zile calde** | O fereastră deschisă coboară camera la protecție la îngheț; peste o temperatură exterioară aleasă de tine, încălzirea se oprește. |
 | ⚡ **Priză pe centrală** (opțional) | O priză inteligentă cu măsurare pe centrală arată când arde arzătorul și cât a mers azi. |
+| ⛽ **Consum și cost gaz** | Din timpul de funcționare al arzătorului, HeatWise estimează gazul consumat azi și în total (m³, kWh, lei), gata pentru panoul **Energie**. Îi dai indexul contorului (de exemplu din integrarea furnizorului) și învață singur câți m³ arde pe oră din fiecare citire. |
 | 👀 **Mod doar observă** | Oprești *Control HeatWise* și îți arată ce ar face, fără să atingă vreun aparat. Ideal ca să-l încerci lângă ce ai acum. |
 | 🧠 **Se explică** | Senzorul *Decizie* și panoul spun pe înțelesul tuturor de ce casa are temperatura pe care o are. |
 | 🖥️ **Panou în bara laterală** | Casa și fiecare cameră, preseturi și temperaturi, sursa de căldură, cât a mers arzătorul, cât costă căldura din gaz și din AC și ultimele 24 de ore. |
@@ -112,6 +113,9 @@ dezactivează automatizările vechi de încălzire și pornește **Control HeatW
 | Randament centrală / COP AC la 7 °C | 0,92 / 3,5 | Folosite la comparația de cost. |
 | Capetele copiază termostatul principal | oprit | Pe cameră: capetele urmează termostatul centralei în loc de ținta proprie. |
 | Senzor de putere centrală / Arzător pornit peste | — / 30 W | Arzător pornit și timpul de funcționare azi, din priza inteligentă. |
+| Indexul contorului de gaz | — | Un senzor cu indexul în m³ (integrarea furnizorului, numărător de impulsuri…). Fiecare citire nouă recalibrează m³ pe oră de funcționare. |
+| Gaz pe oră de funcționare | 1,5 m³/h | Valoarea de pornire până o învață din contor. |
+| Energie într-un m³ de gaz | 10,5 kWh | Puterea calorifică de pe factura de gaz. |
 
 ### Entități
 
@@ -123,6 +127,9 @@ dezactivează automatizările vechi de încălzire și pornește **Control HeatW
 | `sensor.…_main_thermostat_target` | Ce cere HeatWise de la termostatul principal. |
 | `sensor.…_heat_source` | `boiler` (centrala) sau `ac`, cu COP-ul estimat și costul unui kWh de căldură din fiecare (doar cu AC). |
 | `sensor.…_burner_runtime_today` / `binary_sensor.…_burner_running` | Doar cu priză pe centrală. |
+| `sensor.…_gas_today` / `sensor.…_gas_total` | Gazul consumat estimat, în m³ (totalul merge în panoul Energie). Doar cu priză pe centrală. |
+| `sensor.…_gas_cost_today` | Costul gazului azi, dacă e setat prețul gazului. |
+| `sensor.…_gas_per_burner_hour` | Câți m³ pe oră de funcționare folosește acum și dacă i-a învățat din contor. |
 | `binary_sensor.…_anyone_home` | Prezența așa cum o vede HeatWise (doar cu persoane). |
 | `switch.…_heatwise_control` | Oprit = doar observă. |
 | `switch.…_heat_with_air_conditioners` | Permite sau blochează încălzirea cu AC (doar cu AC). |
@@ -137,6 +144,8 @@ dezactivează automatizările vechi de încălzire și pornește **Control HeatW
 
 - Limbi: română și engleză. Una nouă înseamnă un fișier în `translations/` și un dicționar în
   `frontend/heatwise-panel.js` — PR-urile sunt binevenite.
+- Consumul de gaz e o estimare din timpul de funcționare al arzătorului (±10–15 %) și se îmbunătățește
+  cu fiecare citire a contorului. Pentru valori exacte, dă-i ca index un numărător de impulsuri de pe contor.
 - Eficiența AC-ului (COP) e o estimare liniară simplă; pune *COP la 7 °C* din fișa tehnică a AC-ului
   pentru o comparație mai bună.
 - O centrală cu termostat de cameră pornit/oprit poate fi rugată să încălzească doar prin acel

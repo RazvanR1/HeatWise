@@ -109,6 +109,8 @@ def _house_status(hass: HomeAssistant, entry) -> dict[str, Any]:
             "burner_runtime": _entity(reg, "sensor", f"{eid}_{HOUSE_ZONE_ID}_burner_runtime"),
             "burner_running": _entity(reg, "binary_sensor", f"{eid}_{HOUSE_ZONE_ID}_burner_running"),
             "anyone_home": _entity(reg, "binary_sensor", f"{eid}_{HOUSE_ZONE_ID}_anyone_home"),
+            "gas_today": _entity(reg, "sensor", f"{eid}_{HOUSE_ZONE_ID}_gas_today"),
+            "gas_cost_today": _entity(reg, "sensor", f"{eid}_{HOUSE_ZONE_ID}_gas_cost_today"),
         },
         "zones": zones,
         "source_text": controller.explanation() if plan else None,

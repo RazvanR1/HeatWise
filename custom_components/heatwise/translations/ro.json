@@ -82,10 +82,18 @@
       },
       "power": {
         "title": "Priza centralei",
-        "description": "O priză inteligentă cu măsurare pe centrală arată când arde arzătorul și cât timp.",
+        "description": "O priză inteligentă cu măsurare pe centrală arată când arde arzătorul. Cu ea HeatWise estimează și gazul consumat și cât costă.",
         "data": {
           "boiler_power_sensor": "Senzor de putere al centralei",
-          "burner_threshold": "Arzător pornit peste (W)"
+          "burner_threshold": "Arzător pornit peste (W)",
+          "gas_meter_entity": "Indexul contorului de gaz (opțional)",
+          "gas_rate": "Gaz pe oră de funcționare (m³/h)",
+          "gas_kwh_per_m3": "Energie într-un m³ de gaz (kWh)"
+        },
+        "data_description": {
+          "gas_meter_entity": "Un senzor cu indexul contorului în m³, de exemplu din integrarea furnizorului de gaz sau de la un numărător de impulsuri. HeatWise învață consumul real pe oră de funcționare din fiecare citire nouă.",
+          "gas_rate": "Valoarea de pornire până o învață din contor. O centrală de 24 kW arde până la aproximativ 2,5 m³/h.",
+          "gas_kwh_per_m3": "Scrie pe factura de gaz (puterea calorifică); în România aproximativ 10,5 kWh."
         }
       },
       "add_zone": {
@@ -178,6 +186,18 @@
       },
       "burner_runtime": {
         "name": "Timp de funcționare arzător azi"
+      },
+      "gas_today": {
+        "name": "Gaz azi"
+      },
+      "gas_total": {
+        "name": "Gaz total"
+      },
+      "gas_cost_today": {
+        "name": "Cost gaz azi"
+      },
+      "gas_rate": {
+        "name": "Gaz pe oră de funcționare"
       }
     },
     "binary_sensor": {

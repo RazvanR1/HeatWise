@@ -82,10 +82,18 @@
       },
       "power": {
         "title": "Boiler power plug",
-        "description": "A smart plug with power measurement on the boiler shows when the burner runs and for how long.",
+        "description": "A smart plug with power measurement on the boiler shows when the burner runs. With it HeatWise also estimates the gas used and its cost.",
         "data": {
           "boiler_power_sensor": "Boiler power sensor",
-          "burner_threshold": "Burner on above (W)"
+          "burner_threshold": "Burner on above (W)",
+          "gas_meter_entity": "Gas meter index (optional)",
+          "gas_rate": "Gas per burner hour (m³/h)",
+          "gas_kwh_per_m3": "Energy in 1 m³ of gas (kWh)"
+        },
+        "data_description": {
+          "gas_meter_entity": "A sensor with the meter index in m³, e.g. from your gas supplier's integration or a pulse counter. HeatWise learns the real gas use per burner hour from every new reading.",
+          "gas_rate": "Starting value until HeatWise learns it from the meter. A 24 kW boiler burns up to about 2.5 m³/h.",
+          "gas_kwh_per_m3": "Written on the gas bill (calorific value); about 10.5 kWh in Romania."
         }
       },
       "add_zone": {
@@ -178,6 +186,18 @@
       },
       "burner_runtime": {
         "name": "Burner runtime today"
+      },
+      "gas_today": {
+        "name": "Gas today"
+      },
+      "gas_total": {
+        "name": "Gas total"
+      },
+      "gas_cost_today": {
+        "name": "Gas cost today"
+      },
+      "gas_rate": {
+        "name": "Gas per burner hour"
       }
     },
     "binary_sensor": {

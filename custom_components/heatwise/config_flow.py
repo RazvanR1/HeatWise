@@ -29,8 +29,11 @@ from .const import (
     CONF_EL_PRICE,
     CONF_EL_PRICE_ENTITY,
     CONF_FROST,
+    CONF_GAS_KWH_PER_M3,
+    CONF_GAS_METER,
     CONF_GAS_PRICE,
     CONF_GAS_PRICE_ENTITY,
+    CONF_GAS_RATE,
     CONF_HOUSE_SENSOR,
     CONF_HYBRID_MODE,
     CONF_NAME,
@@ -58,6 +61,8 @@ from .const import (
     DEFAULT_COP_AT_7,
     DEFAULT_ECO,
     DEFAULT_FROST,
+    DEFAULT_GAS_KWH_PER_M3,
+    DEFAULT_GAS_RATE,
     DEFAULT_OVERRIDE_MINUTES,
     DOMAIN,
 )
@@ -88,6 +93,7 @@ SCHEDULE = selector.EntitySelector(
 WINDOWS = selector.EntitySelector(selector.EntitySelectorConfig(domain="binary_sensor", multiple=True))
 SENSOR = selector.EntitySelector(selector.EntitySelectorConfig(domain=["sensor", "input_number"]))
 POWER = selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor", device_class="power"))
+GAS_METER = selector.EntitySelector(selector.EntitySelectorConfig(domain=["sensor", "input_number"]))
 
 
 def _opt(key: str, values: dict[str, Any], default: Any = None) -> vol.Optional:
@@ -159,6 +165,9 @@ def power_schema(values: dict[str, Any]) -> vol.Schema:
         {
             _opt(CONF_BOILER_POWER, values): POWER,
             _req(CONF_BURNER_THRESHOLD, values, DEFAULT_BURNER_THRESHOLD): _number(1, 2000, 1),
+            _opt(CONF_GAS_METER, values): GAS_METER,
+            _req(CONF_GAS_RATE, values, DEFAULT_GAS_RATE): _number(0.2, 6, 0.01),
+            _req(CONF_GAS_KWH_PER_M3, values, DEFAULT_GAS_KWH_PER_M3): _number(8, 12, 0.01),
         }
     )
 

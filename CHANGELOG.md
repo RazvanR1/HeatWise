@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0 - 2026-11-13
+
+- Gas use and cost: estimated from the burner time (m³ per burner hour), with sensors for today, the running total (Energy dashboard) and today's cost
+- Learns the real m³ per burner hour from a gas meter index sensor (supplier integration or pulse counter); a meter replacement only resets the baseline
+- Panel: gas today tile with the cost
+
 ## 0.2.1 - 2026-11-13
 
 - Panel: fewer time labels on the chart on phones so they do not overlap

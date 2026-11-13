@@ -41,8 +41,11 @@ from .const import (
     CONF_EL_PRICE,
     CONF_EL_PRICE_ENTITY,
     CONF_FROST,
+    CONF_GAS_KWH_PER_M3,
+    CONF_GAS_METER,
     CONF_GAS_PRICE,
     CONF_GAS_PRICE_ENTITY,
+    CONF_GAS_RATE,
     CONF_HOUSE_SENSOR,
     CONF_HYBRID_MODE,
     CONF_NAME,
@@ -71,9 +74,14 @@ from .const import (
     DEFAULT_COP_AT_7,
     DEFAULT_ECO,
     DEFAULT_FROST,
+    DEFAULT_GAS_KWH_PER_M3,
+    DEFAULT_GAS_RATE,
     DEFAULT_OVERRIDE_MINUTES,
     DOMAIN,
     EVAL_INTERVAL_SECONDS,
+    GAS_CALIBRATION_MIN_HOURS,
+    GAS_RATE_MAX,
+    GAS_RATE_MIN,
     HOUSE_ZONE_ID,
     OWN_COMMAND_GRACE_SECONDS,
     SIGNAL_UPDATE,
@@ -125,6 +133,12 @@ class HeatWiseController:
         self.burner_day = dt_util.now().date().isoformat()
         self.burner_seconds = 0.0
         self.burner_on_since: datetime | None = None
+        self.burner_total_seconds = 0.0
+        self.gas_today_m3 = 0.0
+        self.gas_total_m3 = 0.0
+        self.gas_rate_learned: float | None = None
+        self.gas_calibrations = 0
+        self.gas_baseline: dict[str, Any] | None = None
         self.anyone_home: bool | None = None
         self._departed_at: datetime | None = None
         self._last_sent: dict[str, tuple[float, datetime]] = {}
@@ -195,8 +209,16 @@ class HeatWiseController:
         self.previous_source = data.get("source", engine.SOURCE_BOILER)
         self.previous_warm_off = data.get("warm_off", False)
         burner = data.get("burner", {})
-        if burner.get("day") == self.burner_day:
+        same_day = burner.get("day") == self.burner_day
+        if same_day:
             self.burner_seconds = float(burner.get("seconds", 0))
+        self.burner_total_seconds = float(burner.get("total_seconds", 0))
+        gas = data.get("gas", {})
+        self.gas_total_m3 = float(gas.get("total_m3", 0))
+        self.gas_today_m3 = float(gas.get("today_m3", 0)) if same_day else 0.0
+        self.gas_rate_learned = gas.get("rate_learned")
+        self.gas_calibrations = int(gas.get("calibrations", 0))
+        self.gas_baseline = gas.get("baseline")
 
         self._unsubs.append(
             async_track_state_change_event(
@@ -212,6 +234,8 @@ class HeatWiseController:
             power = _float(self.hass.states.get(self.config[CONF_BOILER_POWER]))
             if power is not None and power > self._burner_threshold:
                 self.burner_on_since = dt_util.utcnow()
+        if self.config.get(CONF_GAS_METER):
+            self._gas_meter_update(self.hass.states.get(self.config[CONF_GAS_METER]))
         self.async_schedule_evaluate(delay=5)
 
     async def async_unload(self) -> None:
@@ -234,7 +258,18 @@ class HeatWiseController:
             "ac_blocked": self.ac_blocked,
             "source": self.previous_source,
             "warm_off": self.previous_warm_off,
-            "burner": {"day": self.burner_day, "seconds": self.burner_runtime_seconds},
+            "burner": {
+                "day": self.burner_day,
+                "seconds": self.burner_runtime_seconds,
+                "total_seconds": self.burner_total_live_seconds,
+            },
+            "gas": {
+                "today_m3": self.gas_today_live,
+                "total_m3": self.gas_total_live,
+                "rate_learned": self.gas_rate_learned,
+                "calibrations": self.gas_calibrations,
+                "baseline": self.gas_baseline,
+            },
         }
 
     @callback
@@ -252,6 +287,7 @@ class HeatWiseController:
             CONF_GAS_PRICE_ENTITY,
             CONF_EL_PRICE_ENTITY,
             CONF_BOILER_POWER,
+            CONF_GAS_METER,
         ):
             if c.get(key):
                 ids.append(c[key])
@@ -279,6 +315,8 @@ class HeatWiseController:
         if entity_id in c.get(CONF_PERSONS, []):
             if old is not None and new is not None and old.state == "home" and new.state != "home":
                 self._departed_at = dt_util.utcnow()
+        if entity_id == c.get(CONF_GAS_METER):
+            self._gas_meter_update(new)
         if entity_id == c.get(CONF_BOILER_POWER):
             self._track_burner(new)
         elif entity_id == c.get(CONF_BOILER):
@@ -369,14 +407,28 @@ class HeatWiseController:
         return int(self.config.get(CONF_OVERRIDE_MINUTES, DEFAULT_OVERRIDE_MINUTES))
 
     @callback
+    def _flush_burner(self, now: datetime) -> None:
+        """Book the burner time since it started (or since the last flush)."""
+        if self.burner_on_since is None:
+            return
+        seconds = max(0.0, (now - self.burner_on_since).total_seconds())
+        self.burner_seconds += seconds
+        self.burner_total_seconds += seconds
+        gas = seconds / 3600 * self.gas_rate
+        self.gas_today_m3 += gas
+        self.gas_total_m3 += gas
+        self.burner_on_since = now
+
+    @callback
     def _roll_burner_day(self) -> None:
         today = dt_util.now().date().isoformat()
         if today == self.burner_day:
             return
-        if self.burner_on_since is not None:
-            self.burner_on_since = dt_util.utcnow()
+        self._flush_burner(dt_util.utcnow())
         self.burner_day = today
         self.burner_seconds = 0.0
+        self.gas_today_m3 = 0.0
+        self._save()
 
     @callback
     def _track_burner(self, new: State | None) -> None:
@@ -387,9 +439,79 @@ class HeatWiseController:
         if running and self.burner_on_since is None:
             self.burner_on_since = now
         elif not running and self.burner_on_since is not None:
-            self.burner_seconds += (now - self.burner_on_since).total_seconds()
+            self._flush_burner(now)
             self.burner_on_since = None
             self._save()
+
+    # ------------------------------------------------------------------ gas
+    @property
+    def gas_rate(self) -> float:
+        """m³ of gas per burner hour: learned from the meter, else the option."""
+        if self.gas_rate_learned:
+            return float(self.gas_rate_learned)
+        return float(self.config.get(CONF_GAS_RATE, DEFAULT_GAS_RATE))
+
+    @property
+    def gas_kwh_per_m3(self) -> float:
+        return float(self.config.get(CONF_GAS_KWH_PER_M3, DEFAULT_GAS_KWH_PER_M3))
+
+    def _live_seconds(self) -> float:
+        if self.burner_on_since is None:
+            return 0.0
+        return max(0.0, (dt_util.utcnow() - self.burner_on_since).total_seconds())
+
+    @property
+    def burner_total_live_seconds(self) -> float:
+        return self.burner_total_seconds + self._live_seconds()
+
+    @property
+    def gas_today_live(self) -> float:
+        return self.gas_today_m3 + self._live_seconds() / 3600 * self.gas_rate
+
+    @property
+    def gas_total_live(self) -> float:
+        return self.gas_total_m3 + self._live_seconds() / 3600 * self.gas_rate
+
+    @property
+    def gas_price_kwh(self) -> float | None:
+        return self._price(CONF_GAS_PRICE_ENTITY, CONF_GAS_PRICE)
+
+    @property
+    def gas_cost_today(self) -> float | None:
+        price = self.gas_price_kwh
+        if price is None:
+            return None
+        return self.gas_today_live * self.gas_kwh_per_m3 * price
+
+    @callback
+    def _gas_meter_update(self, state: State | None) -> None:
+        """Learn the real gas use per burner hour from meter readings."""
+        value = _float(state)
+        if value is None:
+            return
+        burner_s = self.burner_total_live_seconds
+        base = self.gas_baseline
+        if base is None or value < float(base["meter"]) - 0.001:
+            self.gas_baseline = {"meter": value, "burner_s": burner_s, "at": dt_util.utcnow().isoformat()}
+            self._save()
+            return
+        used = value - float(base["meter"])
+        hours = (burner_s - float(base["burner_s"])) / 3600
+        if used < 0.5 or hours < GAS_CALIBRATION_MIN_HOURS:
+            return
+        rate = used / hours
+        if GAS_RATE_MIN <= rate <= GAS_RATE_MAX:
+            if self.gas_rate_learned:
+                rate = 0.5 * float(self.gas_rate_learned) + 0.5 * rate
+            self.gas_rate_learned = round(rate, 3)
+            self.gas_calibrations += 1
+            _LOGGER.info("HeatWise learned %.3f m³ per burner hour", self.gas_rate_learned)
+        else:
+            _LOGGER.warning(
+                "HeatWise ignored an implausible gas reading: %.2f m³ in %.1f burner hours", used, hours
+            )
+        self.gas_baseline = {"meter": value, "burner_s": burner_s, "at": dt_util.utcnow().isoformat()}
+        self._save()
 
     @property
     def burner_running(self) -> bool:
@@ -739,6 +861,14 @@ class HeatWiseController:
             "ac_owned": sorted(self.ac_owned),
             "ac_blocked": self.ac_blocked,
             "burner_runtime_seconds": self.burner_runtime_seconds,
+            "gas": {
+                "rate": self.gas_rate,
+                "rate_learned": self.gas_rate_learned,
+                "calibrations": self.gas_calibrations,
+                "baseline": self.gas_baseline,
+                "today_m3": self.gas_today_live,
+                "total_m3": self.gas_total_live,
+            },
             "plan": None
             if plan is None
             else {

@@ -19,6 +19,8 @@ const STR = {
     outdoor: "Outdoor",
     boiler_target: "Main thermostat",
     burner_today: "Burner today",
+    gas_today: "Gas today",
+    estimate: "estimate",
     burning: "burning now",
     cop: "AC efficiency (COP)",
     cost: "Cost of 1 kWh of heat",
@@ -59,6 +61,8 @@ const STR = {
     outdoor: "Afară",
     boiler_target: "Termostatul principal",
     burner_today: "Arzător azi",
+    gas_today: "Gaz azi",
+    estimate: "estimare",
     burning: "arde acum",
     cop: "Eficiența AC (COP)",
     cost: "Cost 1 kWh căldură",
@@ -412,6 +416,14 @@ class HeatWisePanel extends HTMLElement {
       const mm = Math.round((hours - hh) * 60);
       const burning = this._st(h.entities.burner_running)?.state === "on";
       tiles.push(this._tile("mdi:fire", t.burner_today, `${hh} h ${String(mm).padStart(2, "0")} min`, burning ? `<span class="live"></span>${t.burning}` : ""));
+    }
+    const gas = this._st(h.entities.gas_today);
+    if (gas && gas.state !== "unavailable") {
+      const cost = this._st(h.entities.gas_cost_today);
+      const m3 = num(gas.state);
+      const c = cost && cost.state !== "unavailable" && cost.state !== "unknown" ? num(cost.state) : null;
+      const unit = cost?.attributes?.unit_of_measurement || "";
+      tiles.push(this._tile("mdi:meter-gas", t.gas_today, m3 === null ? "–" : `${m3.toFixed(2)} m³`, c === null ? t.estimate : `${c.toFixed(2)} ${esc(unit)} · ${t.estimate}`));
     }
     if (source) {
       const a = source.attributes;

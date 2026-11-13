@@ -1,7 +1,7 @@
 # 🌡️ HeatWise – smart hybrid heating for Home Assistant
 
 [![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
-![Version](https://img.shields.io/badge/version-0.2.1-blue)
+![Version](https://img.shields.io/badge/version-0.3.0-blue)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 ![Local only](https://img.shields.io/badge/cloud-none-success)
 [![Tests](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml/badge.svg)](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml)
@@ -31,6 +31,7 @@ AC that Home Assistant can see, and everything runs locally.
 | ✋ **Respects manual changes** | Turn a thermostat by hand and the change is kept for the time you choose, or until the next schedule step. |
 | 🪟 **Windows and warm days** | An open window lowers that room to frost protection; above an outdoor temperature you choose, heating stops. |
 | ⚡ **Boiler power plug** (optional) | A smart plug on the boiler shows when the burner runs and for how long today. |
+| ⛽ **Gas use and cost** | From the burner time HeatWise estimates the gas used today and in total (m³, kWh, money), ready for the **Energy** dashboard. Point it at your gas meter index (e.g. your supplier's integration) and it learns the real m³ per burner hour from every reading. |
 | 👀 **Observe-only mode** | Turn off *HeatWise control* and it shows what it would do without touching any device. Ideal for trying it next to your current setup. |
 | 🧠 **Explains itself** | A *Decision* sensor and the panel say in plain words why the house is at the temperature it is. |
 | 🖥️ **Sidebar panel** | The house and every room, presets and temperatures, the heat source, burner time, the cost of heat from gas and from the AC, and the last 24 hours. |
@@ -112,6 +113,9 @@ two, then disable your old heating automations and turn **HeatWise control** on.
 | Boiler efficiency / AC COP at 7 °C | 0.92 / 3.5 | Used in the cost comparison. |
 | Valves copy the main thermostat | off | Per room: the valves follow the boiler thermostat instead of their own target. |
 | Boiler power sensor / Burner on above | — / 30 W | Burner on and runtime today from a smart plug. |
+| Gas meter index | — | A sensor with the meter index in m³ (supplier integration, pulse counter…). Every new reading recalibrates the m³ per burner hour. |
+| Gas per burner hour | 1.5 m³/h | Starting value until it is learned from the meter. |
+| Energy in 1 m³ of gas | 10.5 kWh | The calorific value from your gas bill. |
 
 ### Entities
 
@@ -123,6 +127,9 @@ two, then disable your old heating automations and turn **HeatWise control** on.
 | `sensor.…_main_thermostat_target` | What HeatWise asks from the main thermostat. |
 | `sensor.…_heat_source` | `boiler` or `ac`, with the estimated COP and the cost of 1 kWh of heat from each (only with an AC). |
 | `sensor.…_burner_runtime_today` / `binary_sensor.…_burner_running` | Only with a boiler power plug. |
+| `sensor.…_gas_today` / `sensor.…_gas_total` | Estimated gas use in m³ (the total works in the Energy dashboard). Only with a boiler power plug. |
+| `sensor.…_gas_cost_today` | Today's gas cost, when the gas price is set. |
+| `sensor.…_gas_per_burner_hour` | The m³ per burner hour in use, and whether it was learned from the meter. |
 | `binary_sensor.…_anyone_home` | Presence as HeatWise sees it (only with people). |
 | `switch.…_heatwise_control` | Off = observe only. |
 | `switch.…_heat_with_air_conditioners` | Allow or block AC heating (only with an AC). |
@@ -137,6 +144,8 @@ two, then disable your old heating automations and turn **HeatWise control** on.
 
 - Languages: English and Romanian. Another one is one file in `translations/` and one dictionary
   in `frontend/heatwise-panel.js` — PRs welcome.
+- Gas use is an estimate from the burner time (±10–15 %); it gets better with every meter reading.
+  For exact numbers, feed a pulse counter on the gas meter as the meter index.
 - The AC efficiency (COP) is a simple linear estimate; set *COP at 7 °C* from your AC's datasheet
   for a better comparison.
 - A boiler with an on/off room thermostat can only be asked for heat through that thermostat;
@@ -175,6 +184,7 @@ HeatWise is free and open source, built in my spare time. If it helps your home,
 
 - **Alege cu ce încălzește.** Compară prețul gazului cu cel al curentului, ținând cont de eficiența aerului condiționat la temperatura de afară, sau folosește un prag de temperatură. În zilele blânde încălzește cu AC-urile, iar centrala stă.
 - **Conduce totul ca un singur sistem:** centrala, capetele termostatice și AC-urile, după senzorii din camere, programul tău și cine e acasă. Respectă modificările făcute de mână.
+- **Arată cât gaz consumă centrala și cât costă**, estimat din timpul de funcționare al arzătorului și corectat singur după indexul contorului.
 - **Se explică.** Panoul din bara laterală și senzorul *Decizie* spun pe înțelesul tuturor de ce casa are temperatura pe care o are.
 - **Poate doar să observe**, ca să-l încerci lângă ce ai acum fără să atingă vreun aparat.
 

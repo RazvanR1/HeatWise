@@ -237,3 +237,47 @@ async def test_panel_and_status_api(hass: HomeAssistant, hass_ws_client) -> None
     await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
     assert "heatwise" not in hass.data[frontend.DATA_PANELS]
+
+
+async def test_gas_estimate_and_calibration(hass: HomeAssistant, freezer) -> None:
+    hass.states.async_set("sensor.boiler_power", "4", {"unit_of_measurement": "W", "device_class": "power"})
+    hass.states.async_set("sensor.gas_meter", "100", {"unit_of_measurement": "m³"})
+    entry = await _setup(
+        hass,
+        {
+            "comfort_temp": 21, "eco_temp": 18, "away_temp": 16, "frost_temp": 7,
+            "boiler_power_sensor": "sensor.boiler_power", "burner_threshold": 30,
+            "gas_meter_entity": "sensor.gas_meter", "gas_rate": 2.0, "gas_kwh_per_m3": 10.0,
+            "gas_price": 0.3,
+        },
+    )
+    c = entry.runtime_data
+    assert c.gas_baseline["meter"] == 100
+
+    # 30 minutes of burner at 2 m³/h -> 1 m³, 10 kWh, 3 lei
+    hass.states.async_set("sensor.boiler_power", "65", {"unit_of_measurement": "W", "device_class": "power"})
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(minutes=30))
+    hass.states.async_set("sensor.boiler_power", "5", {"unit_of_measurement": "W", "device_class": "power"})
+    await hass.async_block_till_done()
+    assert abs(c.gas_today_live - 1.0) < 0.01
+    assert abs(c.gas_cost_today - 3.0) < 0.05
+    await _tick(hass, 70)
+    assert abs(float(hass.states.get("sensor.heatwise_home_gas_today").state) - 1.0) < 0.01
+
+    # 5 more burner hours, then the meter shows 8 m³ used since the baseline -> 8 / 5.5 h
+    hass.states.async_set("sensor.boiler_power", "65", {"unit_of_measurement": "W", "device_class": "power"})
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(hours=5))
+    hass.states.async_set("sensor.boiler_power", "5", {"unit_of_measurement": "W", "device_class": "power"})
+    await hass.async_block_till_done()
+    hass.states.async_set("sensor.gas_meter", "108", {"unit_of_measurement": "m³"})
+    await hass.async_block_till_done()
+    assert c.gas_calibrations == 1
+    assert abs(c.gas_rate - 8 / 5.5) < 0.01
+    total_before = c.gas_total_live
+    # a meter replacement (lower index) only resets the baseline
+    hass.states.async_set("sensor.gas_meter", "3", {"unit_of_measurement": "m³"})
+    await hass.async_block_till_done()
+    assert c.gas_baseline["meter"] == 3 and c.gas_calibrations == 1
+    assert c.gas_total_live >= total_before
