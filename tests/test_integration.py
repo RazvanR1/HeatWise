@@ -324,3 +324,25 @@ async def test_ac_energy_and_periods(hass: HomeAssistant, freezer) -> None:
     assert c.period_value("ac_kwh", "today") == 0
     assert c.period_value("ac_kwh", "month") == 0
     assert abs(c.period_value("ac_kwh", "year") - 1 / 6) < 0.01
+
+
+async def test_migrates_gas_from_older_versions(hass: HomeAssistant, freezer, hass_storage) -> None:
+    freezer.move_to("2026-11-14 20:00:00+02:00")
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="Home", data={"name": "Home"},
+        options={"comfort_temp": 21, "eco_temp": 18, "away_temp": 16, "frost_temp": 7,
+                 "boiler_power_sensor": "sensor.p", "gas_price": 0.25, "gas_kwh_per_m3": 10.0},
+    )
+    hass_storage[f"heatwise.{entry.entry_id}"] = {
+        "version": 1, "key": f"heatwise.{entry.entry_id}",
+        "data": {"burner": {"day": "2026-11-14", "seconds": 3600, "total_seconds": 7200},
+                 "gas": {"today_m3": 4.0, "total_m3": 7.0}},
+    }
+    hass.states.async_set("sensor.p", "3", {"unit_of_measurement": "W", "device_class": "power"})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    c = entry.runtime_data
+    assert c.period_value("gas_m3", "today") == 4.0
+    assert c.period_value("gas_m3", "month") == 7.0
+    assert abs(c.period_value("gas_cost", "year") - 17.5) < 0.01

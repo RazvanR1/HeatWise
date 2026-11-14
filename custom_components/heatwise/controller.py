@@ -221,8 +221,8 @@ class HeatWiseController:
         for period in PERIODS:
             if keys.get(period) == self.period_keys[period]:
                 self.period_values[period].update(stored.get("values", {}).get(period, {}))
-        if not stored and same_day:
-            self.period_values["today"]["gas_m3"] = float(gas.get("today_m3", 0))
+        if data.get("periods_version", 0) < 2:
+            self._migrate_periods(gas, same_day)
         self.gas_rate_learned = gas.get("rate_learned")
         self.gas_calibrations = int(gas.get("calibrations", 0))
         self.gas_baseline = gas.get("baseline")
@@ -271,6 +271,7 @@ class HeatWiseController:
                 "total_seconds": self.burner_total_live_seconds,
             },
             "periods": {"keys": self.period_keys, "values": self.period_values},
+            "periods_version": 2,
             "gas": {
                 "total_m3": self.gas_total_live,
                 "rate_learned": self.gas_rate_learned,
@@ -503,6 +504,27 @@ class HeatWiseController:
         return self.period_value("gas_cost", "today")
 
     # ------------------------------------------------------------- periods
+    @callback
+    def _migrate_periods(self, gas: dict[str, Any], same_day: bool) -> None:
+        """Fill the periods from the gas counted by 0.3.x/0.4.x (only the day and total existed).
+
+        Gas tracking was first released in November 2026, so everything counted
+        before this version belongs to this month and this year.
+        """
+        today = self.period_values["today"]
+        if same_day and not today["gas_m3"]:
+            today["gas_m3"] = float(gas.get("today_m3", 0))
+        if dt_util.now().date().isoformat() < "2026-12-01":
+            for period in ("month", "year"):
+                values = self.period_values[period]
+                values["gas_m3"] = max(values["gas_m3"], self.gas_total_m3, today["gas_m3"])
+        price = self.gas_price_kwh
+        if price is not None:
+            for values in self.period_values.values():
+                if not values["gas_cost"] and values["gas_m3"]:
+                    values["gas_cost"] = values["gas_m3"] * self.gas_kwh_per_m3 * price
+        self._save()
+
     @staticmethod
     def _empty_period() -> dict[str, float]:
         return {"gas_m3": 0.0, "gas_cost": 0.0, "ac_kwh": 0.0, "ac_cost": 0.0}

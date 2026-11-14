@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1 - 2026-11-14
+
+- Upgrading from 0.3/0.4: the gas already counted now fills this month and this year, with its cost, instead of starting from zero
+
 ## 0.5.0 - 2026-11-14
 
 - Consumption and cost for today, this month and this year: gas (m³ and money), AC electricity while heating (kWh and money, from the ACs' power sensors) and the total cost of heating
