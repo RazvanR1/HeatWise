@@ -54,6 +54,11 @@ async def test_config_flow_creates_entry(hass: HomeAssistant) -> None:
         result["flow_id"],
         {"name": "Casa", "comfort_temp": 21, "eco_temp": 18, "away_temp": 16, "frost_temp": 7},
     )
+    assert result["type"] is FlowResultType.FORM and result["step_id"] == "equipment"
+    # everything on the equipment page may stay empty
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"boiler_type": "unknown", "ac_energy_class": "unknown"}
+    )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "Casa"
 
@@ -171,7 +176,7 @@ async def test_every_options_page_opens(hass: HomeAssistant) -> None:
             "zones": [{"zone_id": "k1", "zone_name": "Kitchen", "trvs": [TRV], "trv_follow_boiler": False}],
         },
     )
-    for step in ("house", "hybrid", "power", "add_zone", "edit_zone", "remove_zone"):
+    for step in ("house", "equipment", "hybrid", "power", "add_zone", "edit_zone", "remove_zone"):
         result = await hass.config_entries.options.async_init(entry.entry_id)
         result = await hass.config_entries.options.async_configure(result["flow_id"], {"next_step_id": step})
         assert result["type"] is FlowResultType.FORM, step

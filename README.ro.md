@@ -1,7 +1,7 @@
 # 🌡️ HeatWise – încălzire inteligentă și hibridă pentru Home Assistant
 
 [![Deschide Home Assistant și arată acest repository în HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
-![Version](https://img.shields.io/badge/version-0.3.0-blue)
+![Version](https://img.shields.io/badge/version-0.4.0-blue)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 ![Local only](https://img.shields.io/badge/cloud-none-success)
 [![Tests](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml/badge.svg)](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml)
@@ -35,6 +35,7 @@ sau AC pe care îl vede Home Assistant, și totul rulează local.
 | 👀 **Mod doar observă** | Oprești *Control HeatWise* și îți arată ce ar face, fără să atingă vreun aparat. Ideal ca să-l încerci lângă ce ai acum. |
 | 🧠 **Se explică** | Senzorul *Decizie* și panoul spun pe înțelesul tuturor de ce casa are temperatura pe care o are. |
 | 🖥️ **Panou în bara laterală** | Casa și fiecare cameră, preseturi și temperaturi, sursa de căldură, cât a mers arzătorul, cât costă căldura din gaz și din AC și ultimele 24 de ore. |
+| 🔧 **Îți cunoaște aparatele** (opțional) | Îi spui centrala și clima din fișa tehnică sau de pe eticheta energetică – câteva cifre, fără o bază de date de modele care să se învechească – și comparația de cost și estimarea gazului folosesc randamentele tale reale. Ce lași gol primește media pentru tipul de aparat. |
 | 🌍 **Română și engleză** | Urmează automat limba din Home Assistant. |
 
 ### Capturi
@@ -87,7 +88,8 @@ COP(afară) = COP la 7 °C + 0,08 × (afară − 7), minim 1,5
 
    [![Deschide Home Assistant și începe configurarea HeatWise.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=heatwise)
 
-3. Alegi ce ai: termostatul principal, senzorul de afară, persoanele, un program. Poți lăsa orice gol.
+3. Alegi ce ai: termostatul principal, senzorul de afară, persoanele, un program. Pe pagina următoare,
+   centrala și clima din fișa tehnică. Poți lăsa orice gol.
 4. Din meniul **Configurează** al integrării adaugi camere (capete, AC-uri), prețuri și priza centralei.
 5. Deschizi **HeatWise** din bara laterală.
 
@@ -110,11 +112,12 @@ dezactivează automatizările vechi de încălzire și pornește **Control HeatW
 | Nu folosi niciodată AC-ul sub | −15 °C | Sub această temperatură încălzește mereu centrala. |
 | Cu cât setează AC-ul peste țintă | 2 °C | Cât de sus setează HeatWise AC-ul ca să încălzească cu putere; reglajul se face după senzorul din cameră. |
 | Preț gaz / curent | — | Un senzor sau o valoare fixă, per kWh. Gaz facturat în m³: 1 m³ ≈ 10,5 kWh. |
-| Randament centrală / COP AC la 7 °C | 0,92 / 3,5 | Folosite la comparația de cost. |
+| Tipul centralei / puterea maximă la încălzire / randamentul (%) | nu știu / — / — | Din fișa tehnică. Randamentul e valoarea la sarcină maximă raportată la Hi (de exemplu 97,5 %); gol = media pentru tip (în condensare 0,93, clasică 0,84, nu știu 0,92, raportat la kWh de pe factura de gaz). Din putere pornește estimarea gazului pe oră de funcționare. |
+| Capacitatea AC la încălzire / puterea consumată (W) | — | Din fișa tehnică (de exemplu 3399 W / 916 W → COP 3,71). Gol = din clasa energetică la încălzire (A+++ … B), altfel un COP mediu de 3,5. |
 | Capetele copiază termostatul principal | oprit | Pe cameră: capetele urmează termostatul centralei în loc de ținta proprie. |
 | Senzor de putere centrală / Arzător pornit peste | — / 30 W | Arzător pornit și timpul de funcționare azi, din priza inteligentă. |
 | Indexul contorului de gaz | — | Un senzor cu indexul în m³ (integrarea furnizorului, numărător de impulsuri…). Fiecare citire nouă recalibrează m³ pe oră de funcționare. |
-| Gaz pe oră de funcționare | 1,5 m³/h | Valoarea de pornire până o învață din contor. |
+| Gaz pe oră de funcționare | din puterea centralei, altfel 1,5 m³/h | Valoarea de pornire până o învață din contor. |
 | Energie într-un m³ de gaz | 10,5 kWh | Puterea calorifică de pe factura de gaz. |
 
 ### Entități

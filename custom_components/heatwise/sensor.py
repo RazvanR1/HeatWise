@@ -112,11 +112,18 @@ class HeatSourceSensor(HeatWiseEntity, SensorEntity):
         plan = self.controller.plan
         if plan is None:
             return {}
+        eq = self.controller.equipment
         return {
             "reason": plan.source_reason,
             "estimated_cop": round(plan.cop, 2) if plan.cop else None,
             "gas_cost_per_kwh_heat": round(plan.cost_gas, 4) if plan.cost_gas else None,
             "ac_cost_per_kwh_heat": round(plan.cost_ac, 4) if plan.cost_ac else None,
+            "boiler_efficiency": eq.boiler_efficiency,
+            "boiler_efficiency_from": eq.boiler_efficiency_source,
+            "ac_cop_at_7": eq.cop_at_7,
+            "ac_cop_from": eq.cop_source,
+            "boiler_model": self.controller.config.get("boiler_model"),
+            "ac_model": self.controller.config.get("ac_model"),
         }
 
 
@@ -224,6 +231,7 @@ class GasRateSensor(HeatWiseEntity, SensorEntity):
         c = self.controller
         return {
             "learned_from_meter": c.gas_rate_learned is not None,
+            "starting_value_from": c.equipment.gas_rate_source,
             "calibrations": c.gas_calibrations,
             "last_meter_reading": (c.gas_baseline or {}).get("meter"),
             "last_reading_at": (c.gas_baseline or {}).get("at"),

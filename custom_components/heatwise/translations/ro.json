@@ -23,6 +23,28 @@
           "persons": "Opțional. Fără persoane, HeatWise consideră că e cineva acasă.",
           "schedule_entity": "Opțional. Merge cel mai bine un ajutor Program (Schedule). Fără el: confort cât e cineva acasă."
         }
+      },
+      "equipment": {
+        "title": "Centrala și aerul condiționat",
+        "description": "Totul e opțional. Cifrele sunt pe fișa tehnică sau pe eticheta energetică. Ce lași gol, HeatWise înlocuiește cu o medie pentru tipul de aparat; le poți completa oricând din Configurează.",
+        "data": {
+          "boiler_model": "Modelul centralei",
+          "boiler_type": "Tipul centralei",
+          "boiler_power_kw": "Puterea maximă la încălzire (kW)",
+          "boiler_efficiency_pct": "Randamentul din fișa tehnică (%)",
+          "ac_model": "Modelul aerului condiționat",
+          "ac_heat_w": "Capacitatea AC la încălzire (W)",
+          "ac_input_w": "Puterea consumată de AC la încălzire (W)",
+          "ac_energy_class": "Clasa energetică AC la încălzire"
+        },
+        "data_description": {
+          "boiler_model": "Doar ca să știi ce ai, de exemplu Beretta Quadra Green 25 CSI.",
+          "boiler_power_kw": "La încălzire, nu la apa caldă. Din ea pornește estimarea gazului pe oră de funcționare.",
+          "boiler_efficiency_pct": "Valoarea la sarcină maximă raportată la Hi, de exemplu 97,5. Centralele în condensare trec de 100 % la sarcină mică.",
+          "ac_heat_w": "Capacitatea nominală la încălzire, de exemplu 3399 W. Împreună cu puterea consumată dă eficiența AC-ului (COP).",
+          "ac_input_w": "Puterea nominală consumată la încălzire, de exemplu 916 W.",
+          "ac_energy_class": "Se folosește doar dacă cele două cifre de mai sus sunt goale."
+        }
       }
     }
   },
@@ -33,6 +55,7 @@
         "description": "Ce vrei să schimbi?",
         "menu_options": {
           "house": "Casa",
+          "equipment": "Centrala și aerul condiționat",
           "hybrid": "Aer condiționat și prețuri",
           "power": "Priza centralei",
           "add_zone": "Adaugă o zonă",
@@ -75,9 +98,7 @@
           "gas_price_entity": "Senzor preț gaz (per kWh)",
           "gas_price": "Preț gaz per kWh (dacă nu ai senzor)",
           "electricity_price_entity": "Senzor preț curent (per kWh)",
-          "electricity_price": "Preț curent per kWh (dacă nu ai senzor)",
-          "boiler_efficiency": "Randamentul centralei",
-          "cop_at_7": "Eficiența AC-ului (COP) la 7 °C"
+          "electricity_price": "Preț curent per kWh (dacă nu ai senzor)"
         }
       },
       "power": {
@@ -139,6 +160,28 @@
         "data": {
           "zone_id": "Zona"
         }
+      },
+      "equipment": {
+        "title": "Centrala și aerul condiționat",
+        "description": "Totul e opțional. Cifrele sunt pe fișa tehnică sau pe eticheta energetică. Ce lași gol, HeatWise înlocuiește cu o medie pentru tipul de aparat; le poți completa oricând din Configurează.",
+        "data": {
+          "boiler_model": "Modelul centralei",
+          "boiler_type": "Tipul centralei",
+          "boiler_power_kw": "Puterea maximă la încălzire (kW)",
+          "boiler_efficiency_pct": "Randamentul din fișa tehnică (%)",
+          "ac_model": "Modelul aerului condiționat",
+          "ac_heat_w": "Capacitatea AC la încălzire (W)",
+          "ac_input_w": "Puterea consumată de AC la încălzire (W)",
+          "ac_energy_class": "Clasa energetică AC la încălzire"
+        },
+        "data_description": {
+          "boiler_model": "Doar ca să știi ce ai, de exemplu Beretta Quadra Green 25 CSI.",
+          "boiler_power_kw": "La încălzire, nu la apa caldă. Din ea pornește estimarea gazului pe oră de funcționare.",
+          "boiler_efficiency_pct": "Valoarea la sarcină maximă raportată la Hi, de exemplu 97,5. Centralele în condensare trec de 100 % la sarcină mică.",
+          "ac_heat_w": "Capacitatea nominală la încălzire, de exemplu 3399 W. Împreună cu puterea consumată dă eficiența AC-ului (COP).",
+          "ac_input_w": "Puterea nominală consumată la încălzire, de exemplu 916 W.",
+          "ac_energy_class": "Se folosește doar dacă cele două cifre de mai sus sunt goale."
+        }
       }
     },
     "error": {
@@ -151,6 +194,23 @@
         "auto": "Automat (cel mai ieftin / temperatura de afară)",
         "boiler_only": "Doar centrala",
         "ac_only": "Doar aerul condiționat"
+      }
+    },
+    "boiler_type": {
+      "options": {
+        "condensing": "În condensare",
+        "conventional": "Clasică (fără condensare)",
+        "unknown": "Nu știu"
+      }
+    },
+    "ac_energy_class": {
+      "options": {
+        "A+++": "A+++",
+        "A++": "A++",
+        "A+": "A+",
+        "A": "A",
+        "B": "B",
+        "unknown": "Nu știu"
       }
     }
   },

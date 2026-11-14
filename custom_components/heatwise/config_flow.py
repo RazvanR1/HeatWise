@@ -2,29 +2,38 @@
 
 from __future__ import annotations
 
-from typing import Any
 import uuid
+from typing import Any
 
 import voluptuous as vol
-
-from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlow
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlow,
+)
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from . import engine
-from .controller import effective_config
 from .const import (
+    CONF_AC_ENERGY_CLASS,
+    CONF_AC_HEAT_W,
+    CONF_AC_INPUT_W,
     CONF_AC_MIN_OUTDOOR,
+    CONF_AC_MODEL,
     CONF_AC_OFFSET,
     CONF_AC_THRESHOLD,
     CONF_AWAY,
     CONF_AWAY_DELAY,
     CONF_BOILER,
-    CONF_BOILER_EFFICIENCY,
+    CONF_BOILER_EFFICIENCY_PCT,
+    CONF_BOILER_MODEL,
     CONF_BOILER_POWER,
+    CONF_BOILER_POWER_KW,
+    CONF_BOILER_TYPE,
     CONF_BURNER_THRESHOLD,
     CONF_COMFORT,
-    CONF_COP_AT_7,
     CONF_ECO,
     CONF_EL_PRICE,
     CONF_EL_PRICE_ENTITY,
@@ -55,16 +64,20 @@ from .const import (
     DEFAULT_AC_THRESHOLD,
     DEFAULT_AWAY,
     DEFAULT_AWAY_DELAY,
-    DEFAULT_BOILER_EFFICIENCY,
     DEFAULT_BURNER_THRESHOLD,
     DEFAULT_COMFORT,
-    DEFAULT_COP_AT_7,
     DEFAULT_ECO,
     DEFAULT_FROST,
     DEFAULT_GAS_KWH_PER_M3,
-    DEFAULT_GAS_RATE,
     DEFAULT_OVERRIDE_MINUTES,
     DOMAIN,
+)
+from .controller import effective_config
+from .equipment import (
+    BOILER_CONDENSING,
+    BOILER_CONVENTIONAL,
+    BOILER_UNKNOWN,
+    SCOP_BY_CLASS,
 )
 
 
@@ -154,8 +167,6 @@ def hybrid_schema(values: dict[str, Any]) -> vol.Schema:
             _opt(CONF_GAS_PRICE, values): _number(0, 100, "any"),
             _opt(CONF_EL_PRICE_ENTITY, values): SENSOR,
             _opt(CONF_EL_PRICE, values): _number(0, 100, "any"),
-            _req(CONF_BOILER_EFFICIENCY, values, DEFAULT_BOILER_EFFICIENCY): _number(0.5, 1.1, 0.01),
-            _req(CONF_COP_AT_7, values, DEFAULT_COP_AT_7): _number(1.5, 7, 0.1),
         }
     )
 
@@ -166,8 +177,33 @@ def power_schema(values: dict[str, Any]) -> vol.Schema:
             _opt(CONF_BOILER_POWER, values): POWER,
             _req(CONF_BURNER_THRESHOLD, values, DEFAULT_BURNER_THRESHOLD): _number(1, 2000, 1),
             _opt(CONF_GAS_METER, values): GAS_METER,
-            _req(CONF_GAS_RATE, values, DEFAULT_GAS_RATE): _number(0.2, 6, 0.01),
+            _opt(CONF_GAS_RATE, values): _number(0.2, 6, 0.01),
             _req(CONF_GAS_KWH_PER_M3, values, DEFAULT_GAS_KWH_PER_M3): _number(8, 12, 0.01),
+        }
+    )
+
+
+def equipment_schema(values: dict[str, Any]) -> vol.Schema:
+    return vol.Schema(
+        {
+            _opt(CONF_BOILER_MODEL, values): selector.TextSelector(),
+            _req(CONF_BOILER_TYPE, values, BOILER_UNKNOWN): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=[BOILER_CONDENSING, BOILER_CONVENTIONAL, BOILER_UNKNOWN],
+                    translation_key="boiler_type",
+                )
+            ),
+            _opt(CONF_BOILER_POWER_KW, values): _number(1, 100, 0.1),
+            _opt(CONF_BOILER_EFFICIENCY_PCT, values): _number(60, 115, 0.1),
+            _opt(CONF_AC_MODEL, values): selector.TextSelector(),
+            _opt(CONF_AC_HEAT_W, values): _number(300, 30000, 1),
+            _opt(CONF_AC_INPUT_W, values): _number(100, 10000, 1),
+            _req(CONF_AC_ENERGY_CLASS, values, "unknown"): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=[*SCOP_BY_CLASS, "unknown"],
+                    translation_key="ac_energy_class",
+                )
+            ),
         }
     )
 
@@ -208,12 +244,23 @@ class HeatWiseConfigFlow(ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    def __init__(self) -> None:
+        self._data: dict[str, Any] = {}
+
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         schema = house_schema(user_input or {}, with_name=True)
         if user_input is not None:
-            data = _merge({}, schema, user_input)
-            return self.async_create_entry(title=data[CONF_NAME], data=data)
+            self._data = _merge({}, schema, user_input)
+            return await self.async_step_equipment()
         return self.async_show_form(step_id="user", data_schema=schema)
+
+    async def async_step_equipment(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Boiler and AC from the datasheet; everything may stay empty."""
+        schema = equipment_schema(self._data)
+        if user_input is not None:
+            data = _merge(self._data, schema, user_input)
+            return self.async_create_entry(title=data[CONF_NAME], data=data)
+        return self.async_show_form(step_id="equipment", data_schema=schema)
 
     @staticmethod
     @callback
@@ -237,7 +284,7 @@ class HeatWiseOptionsFlow(OptionsFlow):
         return self.async_create_entry(data=values)
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        menu = ["house", "hybrid", "power", "add_zone"]
+        menu = ["house", "equipment", "hybrid", "power", "add_zone"]
         if self._values.get(CONF_ZONES):
             menu += ["edit_zone", "remove_zone"]
         return self.async_show_menu(step_id="init", menu_options=menu)
@@ -247,6 +294,12 @@ class HeatWiseOptionsFlow(OptionsFlow):
         if user_input is not None:
             return self._save(_merge(self._values, schema, user_input))
         return self.async_show_form(step_id="house", data_schema=schema)
+
+    async def async_step_equipment(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        schema = equipment_schema(self._values)
+        if user_input is not None:
+            return self._save(_merge(self._values, schema, user_input))
+        return self.async_show_form(step_id="equipment", data_schema=schema)
 
     async def async_step_hybrid(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         schema = hybrid_schema(self._values)

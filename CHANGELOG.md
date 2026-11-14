@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0 - 2026-11-14
+
+- New "Boiler and air conditioner" page at setup and in Configure: boiler type, maximum heating power and efficiency, AC heating capacity and power input or energy class, all from the datasheet and all optional
+- The cost comparison and the first guess of gas per burner hour use those numbers; anything left empty gets an average for that kind of device
+- The heat source and gas sensors show which values are in use and where they came from
+
 ## 0.3.0 - 2026-11-13
 
 - Gas use and cost: estimated from the burner time (m³ per burner hour), with sensors for today, the running total (Energy dashboard) and today's cost

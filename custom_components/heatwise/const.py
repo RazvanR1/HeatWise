@@ -35,6 +35,16 @@ CONF_EL_PRICE = "electricity_price"
 CONF_BOILER_EFFICIENCY = "boiler_efficiency"
 CONF_COP_AT_7 = "cop_at_7"
 
+# Equipment (from the datasheet / energy label, all optional)
+CONF_BOILER_MODEL = "boiler_model"
+CONF_BOILER_TYPE = "boiler_type"
+CONF_BOILER_POWER_KW = "boiler_power_kw"
+CONF_BOILER_EFFICIENCY_PCT = "boiler_efficiency_pct"
+CONF_AC_MODEL = "ac_model"
+CONF_AC_HEAT_W = "ac_heat_w"
+CONF_AC_INPUT_W = "ac_input_w"
+CONF_AC_ENERGY_CLASS = "ac_energy_class"
+
 # Boiler power plug
 CONF_BOILER_POWER = "boiler_power_sensor"
 CONF_BURNER_THRESHOLD = "burner_threshold"

@@ -1,7 +1,7 @@
 # 🌡️ HeatWise – smart hybrid heating for Home Assistant
 
 [![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
-![Version](https://img.shields.io/badge/version-0.3.0-blue)
+![Version](https://img.shields.io/badge/version-0.4.0-blue)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 ![Local only](https://img.shields.io/badge/cloud-none-success)
 [![Tests](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml/badge.svg)](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml)
@@ -35,6 +35,7 @@ AC that Home Assistant can see, and everything runs locally.
 | 👀 **Observe-only mode** | Turn off *HeatWise control* and it shows what it would do without touching any device. Ideal for trying it next to your current setup. |
 | 🧠 **Explains itself** | A *Decision* sensor and the panel say in plain words why the house is at the temperature it is. |
 | 🖥️ **Sidebar panel** | The house and every room, presets and temperatures, the heat source, burner time, the cost of heat from gas and from the AC, and the last 24 hours. |
+| 🔧 **Knows your devices** (optional) | Tell it the boiler and the AC from their datasheet or energy label – a few numbers, no model database to go out of date – and the cost comparison and gas estimate use your real efficiencies. Anything you leave empty gets an average for that kind of device. |
 | 🌍 **English and Romanian** | Follows your Home Assistant language automatically. |
 
 ### Screenshots
@@ -86,8 +87,8 @@ COP(outdoor) = COP at 7 °C + 0.08 × (outdoor − 7), at least 1.5
 
    [![Open your Home Assistant instance and start setting up HeatWise.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=heatwise)
 
-3. Pick what you have: the main thermostat, an outdoor sensor, the people, a schedule. Anything can
-   stay empty.
+3. Pick what you have: the main thermostat, an outdoor sensor, the people, a schedule. On the next
+   page, the boiler and the AC from their datasheet. Anything can stay empty.
 4. Open the integration's **Configure** menu to add rooms (valves, ACs), prices and the boiler plug.
 5. Open **HeatWise** in the sidebar.
 
@@ -110,11 +111,12 @@ two, then disable your old heating automations and turn **HeatWise control** on.
 | Never use the AC below | −15 °C | Below this the boiler always heats. |
 | AC setpoint above the target | 2 °C | How much higher HeatWise sets the AC so it heats with power; regulation is on the room sensor. |
 | Gas / electricity price | — | A sensor or a fixed number, per kWh. Gas billed in m³: 1 m³ ≈ 10.5 kWh. |
-| Boiler efficiency / AC COP at 7 °C | 0.92 / 3.5 | Used in the cost comparison. |
+| Boiler type / maximum heating power / efficiency (%) | unknown / — / — | From the datasheet. Efficiency is the full-load value against Hi (e.g. 97.5 %); empty = average for the type (condensing 0.93, conventional 0.84, unknown 0.92, against the kWh on the gas bill). The power gives the first guess of gas per burner hour. |
+| AC heating capacity / power input (W) | — | From the datasheet (e.g. 3399 W / 916 W → COP 3.71). Empty = from the heating energy class (A+++ … B), else an average COP of 3.5. |
 | Valves copy the main thermostat | off | Per room: the valves follow the boiler thermostat instead of their own target. |
 | Boiler power sensor / Burner on above | — / 30 W | Burner on and runtime today from a smart plug. |
 | Gas meter index | — | A sensor with the meter index in m³ (supplier integration, pulse counter…). Every new reading recalibrates the m³ per burner hour. |
-| Gas per burner hour | 1.5 m³/h | Starting value until it is learned from the meter. |
+| Gas per burner hour | from the boiler power, else 1.5 m³/h | Starting value until it is learned from the meter. |
 | Energy in 1 m³ of gas | 10.5 kWh | The calorific value from your gas bill. |
 
 ### Entities

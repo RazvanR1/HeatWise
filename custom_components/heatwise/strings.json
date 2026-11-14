@@ -23,6 +23,28 @@
           "persons": "Optional. Without people HeatWise assumes someone is home.",
           "schedule_entity": "Optional. A Schedule helper works best. Without it: comfort while someone is home."
         }
+      },
+      "equipment": {
+        "title": "Boiler and air conditioner",
+        "description": "All optional. The numbers are on the datasheet or the energy label. Whatever you leave empty, HeatWise replaces with an average for that kind of device; you can fill it in later from Configure.",
+        "data": {
+          "boiler_model": "Boiler model",
+          "boiler_type": "Boiler type",
+          "boiler_power_kw": "Maximum heating power (kW)",
+          "boiler_efficiency_pct": "Boiler efficiency from the datasheet (%)",
+          "ac_model": "Air conditioner model",
+          "ac_heat_w": "AC heating capacity (W)",
+          "ac_input_w": "AC power input when heating (W)",
+          "ac_energy_class": "AC heating energy class"
+        },
+        "data_description": {
+          "boiler_model": "Only for you to remember, e.g. Beretta Quadra Green 25 CSI.",
+          "boiler_power_kw": "Heating, not hot water. Gives the first guess of gas per burner hour.",
+          "boiler_efficiency_pct": "The full-load value against Hi, e.g. 97.5. Condensing boilers show more than 100 % at low load.",
+          "ac_heat_w": "Rated heating capacity, e.g. 3399 W. Together with the power input it gives the AC efficiency (COP).",
+          "ac_input_w": "Rated power consumption when heating, e.g. 916 W.",
+          "ac_energy_class": "Used only if the two numbers above are empty."
+        }
       }
     }
   },
@@ -33,6 +55,7 @@
         "description": "What do you want to change?",
         "menu_options": {
           "house": "House",
+          "equipment": "Boiler and air conditioner",
           "hybrid": "Air conditioner and prices",
           "power": "Boiler power plug",
           "add_zone": "Add a zone",
@@ -75,9 +98,7 @@
           "gas_price_entity": "Gas price sensor (per kWh)",
           "gas_price": "Gas price per kWh (if no sensor)",
           "electricity_price_entity": "Electricity price sensor (per kWh)",
-          "electricity_price": "Electricity price per kWh (if no sensor)",
-          "boiler_efficiency": "Boiler efficiency",
-          "cop_at_7": "AC efficiency (COP) at 7 °C"
+          "electricity_price": "Electricity price per kWh (if no sensor)"
         }
       },
       "power": {
@@ -139,6 +160,28 @@
         "data": {
           "zone_id": "Zone"
         }
+      },
+      "equipment": {
+        "title": "Boiler and air conditioner",
+        "description": "All optional. The numbers are on the datasheet or the energy label. Whatever you leave empty, HeatWise replaces with an average for that kind of device; you can fill it in later from Configure.",
+        "data": {
+          "boiler_model": "Boiler model",
+          "boiler_type": "Boiler type",
+          "boiler_power_kw": "Maximum heating power (kW)",
+          "boiler_efficiency_pct": "Boiler efficiency from the datasheet (%)",
+          "ac_model": "Air conditioner model",
+          "ac_heat_w": "AC heating capacity (W)",
+          "ac_input_w": "AC power input when heating (W)",
+          "ac_energy_class": "AC heating energy class"
+        },
+        "data_description": {
+          "boiler_model": "Only for you to remember, e.g. Beretta Quadra Green 25 CSI.",
+          "boiler_power_kw": "Heating, not hot water. Gives the first guess of gas per burner hour.",
+          "boiler_efficiency_pct": "The full-load value against Hi, e.g. 97.5. Condensing boilers show more than 100 % at low load.",
+          "ac_heat_w": "Rated heating capacity, e.g. 3399 W. Together with the power input it gives the AC efficiency (COP).",
+          "ac_input_w": "Rated power consumption when heating, e.g. 916 W.",
+          "ac_energy_class": "Used only if the two numbers above are empty."
+        }
       }
     },
     "error": {
@@ -151,6 +194,23 @@
         "auto": "Automatic (cheapest / outdoor temperature)",
         "boiler_only": "Boiler only",
         "ac_only": "Air conditioner only"
+      }
+    },
+    "boiler_type": {
+      "options": {
+        "condensing": "Condensing",
+        "conventional": "Conventional (not condensing)",
+        "unknown": "I don't know"
+      }
+    },
+    "ac_energy_class": {
+      "options": {
+        "A+++": "A+++",
+        "A++": "A++",
+        "A+": "A+",
+        "A": "A",
+        "B": "B",
+        "unknown": "I don't know"
       }
     }
   },

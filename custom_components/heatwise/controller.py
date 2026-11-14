@@ -25,6 +25,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from . import engine
+from .equipment import Equipment, resolve as resolve_equipment
 from .const import (
     CONF_AC_MIN_OUTDOOR,
     CONF_AC_OFFSET,
@@ -32,11 +33,9 @@ from .const import (
     CONF_AWAY,
     CONF_AWAY_DELAY,
     CONF_BOILER,
-    CONF_BOILER_EFFICIENCY,
     CONF_BOILER_POWER,
     CONF_BURNER_THRESHOLD,
     CONF_COMFORT,
-    CONF_COP_AT_7,
     CONF_ECO,
     CONF_EL_PRICE,
     CONF_EL_PRICE_ENTITY,
@@ -45,7 +44,6 @@ from .const import (
     CONF_GAS_METER,
     CONF_GAS_PRICE,
     CONF_GAS_PRICE_ENTITY,
-    CONF_GAS_RATE,
     CONF_HOUSE_SENSOR,
     CONF_HYBRID_MODE,
     CONF_NAME,
@@ -68,14 +66,11 @@ from .const import (
     DEFAULT_AC_THRESHOLD,
     DEFAULT_AWAY,
     DEFAULT_AWAY_DELAY,
-    DEFAULT_BOILER_EFFICIENCY,
     DEFAULT_BURNER_THRESHOLD,
     DEFAULT_COMFORT,
-    DEFAULT_COP_AT_7,
     DEFAULT_ECO,
     DEFAULT_FROST,
     DEFAULT_GAS_KWH_PER_M3,
-    DEFAULT_GAS_RATE,
     DEFAULT_OVERRIDE_MINUTES,
     DOMAIN,
     EVAL_INTERVAL_SECONDS,
@@ -449,7 +444,11 @@ class HeatWiseController:
         """m³ of gas per burner hour: learned from the meter, else the option."""
         if self.gas_rate_learned:
             return float(self.gas_rate_learned)
-        return float(self.config.get(CONF_GAS_RATE, DEFAULT_GAS_RATE))
+        return self.equipment.gas_rate_default
+
+    @property
+    def equipment(self) -> Equipment:
+        return resolve_equipment(self.config)
 
     @property
     def gas_kwh_per_m3(self) -> float:
@@ -690,8 +689,8 @@ class HeatWiseController:
             ac_offset=float(c.get(CONF_AC_OFFSET, DEFAULT_AC_OFFSET)),
             gas_price=self._price(CONF_GAS_PRICE_ENTITY, CONF_GAS_PRICE),
             electricity_price=self._price(CONF_EL_PRICE_ENTITY, CONF_EL_PRICE),
-            boiler_efficiency=float(c.get(CONF_BOILER_EFFICIENCY, DEFAULT_BOILER_EFFICIENCY)),
-            cop_at_7=float(c.get(CONF_COP_AT_7, DEFAULT_COP_AT_7)),
+            boiler_efficiency=self.equipment.boiler_efficiency,
+            cop_at_7=self.equipment.cop_at_7,
         )
 
     def _zone_state(self, zone_id: str, schedule: str | None, windows: list[str]) -> engine.ZoneState:
@@ -861,6 +860,7 @@ class HeatWiseController:
             "ac_owned": sorted(self.ac_owned),
             "ac_blocked": self.ac_blocked,
             "burner_runtime_seconds": self.burner_runtime_seconds,
+            "equipment": vars(self.equipment),
             "gas": {
                 "rate": self.gas_rate,
                 "rate_learned": self.gas_rate_learned,
