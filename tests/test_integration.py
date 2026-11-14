@@ -286,3 +286,41 @@ async def test_gas_estimate_and_calibration(hass: HomeAssistant, freezer) -> Non
     await hass.async_block_till_done()
     assert c.gas_baseline["meter"] == 3 and c.gas_calibrations == 1
     assert c.gas_total_live >= total_before
+
+
+async def test_ac_energy_and_periods(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to("2026-01-31 20:00:00+02:00")
+    _thermostat(hass, AC, 21, 18, state="heat", step=1)
+    hass.states.async_set("sensor.ac_power", "0", {"unit_of_measurement": "W", "device_class": "power"})
+    entry = await _setup(
+        hass,
+        {
+            "comfort_temp": 21, "eco_temp": 18, "away_temp": 16, "frost_temp": 7,
+            "electricity_price": 1.0, "control": False,
+            "zones": [{"zone_id": "l1", "zone_name": "Living", "acs": [AC], "ac_power_sensors": ["sensor.ac_power"], "trv_follow_boiler": False}],
+        },
+    )
+    c = entry.runtime_data
+    await _tick(hass, 70)  # first reading
+    hass.states.async_set("sensor.ac_power", "1000", {"unit_of_measurement": "W", "device_class": "power"})
+    await hass.async_block_till_done()
+    # 10 minutes at 1 kW while heating = 0.1667 kWh (gaps are capped at 15 min)
+    freezer.tick(timedelta(minutes=10))
+    hass.states.async_set("sensor.ac_power", "0", {"unit_of_measurement": "W", "device_class": "power"})
+    await hass.async_block_till_done()
+    assert abs(c.period_value("ac_kwh", "today") - 1 / 6) < 0.01
+    assert abs(c.heating_cost("month") - 1 / 6) < 0.01
+    # cooling does not count as heating
+    _thermostat(hass, AC, 21, 18, state="cool", step=1)
+    hass.states.async_set("sensor.ac_power", "900", {"unit_of_measurement": "W", "device_class": "power"})
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(minutes=10))
+    hass.states.async_set("sensor.ac_power", "0", {"unit_of_measurement": "W", "device_class": "power"})
+    await hass.async_block_till_done()
+    assert abs(c.period_value("ac_kwh", "today") - 1 / 6) < 0.01
+    # a new month resets today and month, keeps the year
+    freezer.move_to("2026-02-01 22:00:00+02:00")
+    c._add_period("ac_kwh", 0.0)
+    assert c.period_value("ac_kwh", "today") == 0
+    assert c.period_value("ac_kwh", "month") == 0
+    assert abs(c.period_value("ac_kwh", "year") - 1 / 6) < 0.01

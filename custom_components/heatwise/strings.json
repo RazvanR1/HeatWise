@@ -130,7 +130,11 @@
           "comfort_temp": "Comfort (empty = house)",
           "eco_temp": "Eco (empty = house)",
           "away_temp": "Away (empty = house)",
-          "trv_follow_boiler": "Valves copy the main thermostat"
+          "trv_follow_boiler": "Valves copy the main thermostat",
+          "ac_power_sensors": "AC power sensors (optional)"
+        },
+        "data_description": {
+          "ac_power_sensors": "Smart plugs or meters with the power of the ACs in this room. HeatWise counts their energy and cost while they heat."
         }
       },
       "zone": {
@@ -146,7 +150,11 @@
           "comfort_temp": "Comfort (empty = house)",
           "eco_temp": "Eco (empty = house)",
           "away_temp": "Away (empty = house)",
-          "trv_follow_boiler": "Valves copy the main thermostat"
+          "trv_follow_boiler": "Valves copy the main thermostat",
+          "ac_power_sensors": "AC power sensors (optional)"
+        },
+        "data_description": {
+          "ac_power_sensors": "Smart plugs or meters with the power of the ACs in this room. HeatWise counts their energy and cost while they heat."
         }
       },
       "edit_zone": {
@@ -258,6 +266,45 @@
       },
       "gas_rate": {
         "name": "Gas per burner hour"
+      },
+      "gas_month": {
+        "name": "Gas this month"
+      },
+      "gas_year": {
+        "name": "Gas this year"
+      },
+      "gas_cost_month": {
+        "name": "Gas cost this month"
+      },
+      "gas_cost_year": {
+        "name": "Gas cost this year"
+      },
+      "ac_energy_today": {
+        "name": "AC heating energy today"
+      },
+      "ac_energy_month": {
+        "name": "AC heating energy this month"
+      },
+      "ac_energy_year": {
+        "name": "AC heating energy this year"
+      },
+      "ac_cost_today": {
+        "name": "AC heating cost today"
+      },
+      "ac_cost_month": {
+        "name": "AC heating cost this month"
+      },
+      "ac_cost_year": {
+        "name": "AC heating cost this year"
+      },
+      "heating_cost_today": {
+        "name": "Heating cost today"
+      },
+      "heating_cost_month": {
+        "name": "Heating cost this month"
+      },
+      "heating_cost_year": {
+        "name": "Heating cost this year"
       }
     },
     "binary_sensor": {

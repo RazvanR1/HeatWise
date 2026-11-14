@@ -52,6 +52,7 @@ from .const import (
     CONF_SCHEDULE,
     CONF_WARM_OFF,
     CONF_WINDOWS,
+    CONF_ZONE_AC_POWER,
     CONF_ZONE_ACS,
     CONF_ZONE_FOLLOW_BOILER,
     CONF_ZONE_ID,
@@ -106,6 +107,9 @@ SCHEDULE = selector.EntitySelector(
 WINDOWS = selector.EntitySelector(selector.EntitySelectorConfig(domain="binary_sensor", multiple=True))
 SENSOR = selector.EntitySelector(selector.EntitySelectorConfig(domain=["sensor", "input_number"]))
 POWER = selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor", device_class="power"))
+POWER_MULTI = selector.EntitySelector(
+    selector.EntitySelectorConfig(domain="sensor", device_class="power", multiple=True)
+)
 GAS_METER = selector.EntitySelector(selector.EntitySelectorConfig(domain=["sensor", "input_number"]))
 
 
@@ -215,6 +219,7 @@ def zone_schema(values: dict[str, Any]) -> vol.Schema:
             _opt(CONF_ZONE_SENSOR, values): TEMP_SENSOR,
             _opt(CONF_ZONE_TRVS, values): CLIMATES,
             _opt(CONF_ZONE_ACS, values): CLIMATES,
+            _opt(CONF_ZONE_AC_POWER, values): POWER_MULTI,
             _opt(CONF_WINDOWS, values): WINDOWS,
             _opt(CONF_SCHEDULE, values): SCHEDULE,
             _opt(CONF_COMFORT, values): _temp(),

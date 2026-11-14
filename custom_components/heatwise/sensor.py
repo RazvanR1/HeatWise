@@ -9,13 +9,19 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.const import EntityCategory, UnitOfTemperature, UnitOfTime, UnitOfVolume
-from homeassistant.util import dt as dt_util
+from homeassistant.const import (
+    EntityCategory,
+    UnitOfEnergy,
+    UnitOfTemperature,
+    UnitOfTime,
+    UnitOfVolume,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import dt as dt_util
 
 from . import HeatWiseConfigEntry, engine
-from .const import HOUSE_ZONE_ID
+from .const import HOUSE_ZONE_ID, PERIODS
 from .entity import HeatWiseEntity
 
 
@@ -30,13 +36,14 @@ async def async_setup_entry(
     if controller.has_ac:
         entities.append(HeatSourceSensor(controller))
     if controller.has_power:
-        entities += [
-            BurnerRuntimeSensor(controller),
-            GasTodaySensor(controller),
-            GasTotalSensor(controller),
-            GasCostTodaySensor(controller),
-            GasRateSensor(controller),
-        ]
+        entities += [BurnerRuntimeSensor(controller), GasTotalSensor(controller), GasRateSensor(controller)]
+        entities += [PeriodSensor(controller, "gas", p) for p in PERIODS]
+        entities += [PeriodSensor(controller, "gas_cost", p) for p in PERIODS]
+    if controller.has_ac_power:
+        entities += [PeriodSensor(controller, "ac_energy", p) for p in PERIODS]
+        entities += [PeriodSensor(controller, "ac_cost", p) for p in PERIODS]
+    if controller.has_power or controller.has_ac_power:
+        entities += [PeriodSensor(controller, "heating_cost", p) for p in PERIODS]
     async_add_entities(entities)
 
 
@@ -144,28 +151,6 @@ class BurnerRuntimeSensor(HeatWiseEntity, SensorEntity):
         return round(self.controller.burner_runtime_seconds / 3600, 3)
 
 
-class GasTodaySensor(HeatWiseEntity, SensorEntity):
-    """Estimated gas burned today (burner time × m³ per burner hour)."""
-
-    _attr_translation_key = "gas_today"
-    _attr_device_class = SensorDeviceClass.GAS
-    _attr_state_class = SensorStateClass.TOTAL_INCREASING
-    _attr_native_unit_of_measurement = UnitOfVolume.CUBIC_METERS
-    _attr_suggested_display_precision = 2
-
-    def __init__(self, controller) -> None:
-        super().__init__(controller, HOUSE_ZONE_ID, "gas_today")
-
-    @property
-    def native_value(self) -> float:
-        return round(self.controller.gas_today_live, 3)
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        c = self.controller
-        return {"energy_kwh": round(c.gas_today_live * c.gas_kwh_per_m3, 2), "estimated": True}
-
-
 class GasTotalSensor(HeatWiseEntity, SensorEntity):
     """Running total of the estimated gas use, for the Energy dashboard."""
 
@@ -181,33 +166,6 @@ class GasTotalSensor(HeatWiseEntity, SensorEntity):
     @property
     def native_value(self) -> float:
         return round(self.controller.gas_total_live, 3)
-
-
-class GasCostTodaySensor(HeatWiseEntity, SensorEntity):
-    """What today's gas cost, from the gas price per kWh."""
-
-    _attr_translation_key = "gas_cost_today"
-    _attr_device_class = SensorDeviceClass.MONETARY
-    _attr_state_class = SensorStateClass.TOTAL
-    _attr_suggested_display_precision = 2
-    _attr_icon = "mdi:cash"
-
-    def __init__(self, controller) -> None:
-        super().__init__(controller, HOUSE_ZONE_ID, "gas_cost_today")
-        self._attr_native_unit_of_measurement = controller.hass.config.currency
-
-    @property
-    def available(self) -> bool:
-        return self.controller.gas_price_kwh is not None
-
-    @property
-    def native_value(self) -> float | None:
-        cost = self.controller.gas_cost_today
-        return round(cost, 2) if cost is not None else None
-
-    @property
-    def last_reset(self):
-        return dt_util.start_of_local_day()
 
 
 class GasRateSensor(HeatWiseEntity, SensorEntity):
@@ -237,3 +195,75 @@ class GasRateSensor(HeatWiseEntity, SensorEntity):
             "last_reading_at": (c.gas_baseline or {}).get("at"),
             "burner_hours_total": round(c.burner_total_live_seconds / 3600, 2),
         }
+
+
+_METRICS = {
+    # kind: (controller metric, device class, unit or None for currency, needs price)
+    "gas": ("gas_m3", SensorDeviceClass.GAS, UnitOfVolume.CUBIC_METERS, None),
+    "gas_cost": ("gas_cost", SensorDeviceClass.MONETARY, None, "gas"),
+    "ac_energy": ("ac_kwh", SensorDeviceClass.ENERGY, UnitOfEnergy.KILO_WATT_HOUR, None),
+    "ac_cost": ("ac_cost", SensorDeviceClass.MONETARY, None, "electricity"),
+    "heating_cost": (None, SensorDeviceClass.MONETARY, None, "any"),
+}
+
+
+def _period_start(period: str):
+    start = dt_util.start_of_local_day()
+    if period == "month":
+        return start.replace(day=1)
+    if period == "year":
+        return start.replace(month=1, day=1)
+    return start
+
+
+class PeriodSensor(HeatWiseEntity, SensorEntity):
+    """Consumption or cost for today, this month or this year."""
+
+    _attr_suggested_display_precision = 2
+
+    def __init__(self, controller, kind: str, period: str) -> None:
+        super().__init__(controller, HOUSE_ZONE_ID, f"{kind}_{period}")
+        self._kind = kind
+        self._period = period
+        metric, device_class, unit, price = _METRICS[kind]
+        self._metric = metric
+        self._price = price
+        self._attr_translation_key = f"{kind}_{period}"
+        self._attr_device_class = device_class
+        if device_class == SensorDeviceClass.MONETARY:
+            self._attr_state_class = SensorStateClass.TOTAL
+            self._attr_native_unit_of_measurement = controller.hass.config.currency
+        else:
+            self._attr_state_class = SensorStateClass.TOTAL_INCREASING
+            self._attr_native_unit_of_measurement = unit
+
+    @property
+    def available(self) -> bool:
+        c = self.controller
+        if self._price == "gas":
+            return c.gas_price_kwh is not None
+        if self._price == "electricity":
+            return c.electricity_price_kwh is not None
+        if self._price == "any":
+            return c.gas_price_kwh is not None or c.electricity_price_kwh is not None
+        return True
+
+    @property
+    def native_value(self) -> float:
+        c = self.controller
+        if self._kind == "heating_cost":
+            return round(c.heating_cost(self._period), 2)
+        return round(c.period_value(self._metric, self._period), 3)
+
+    @property
+    def last_reset(self):
+        if self._attr_state_class == SensorStateClass.TOTAL:
+            return _period_start(self._period)
+        return None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        if self._kind == "gas":
+            c = self.controller
+            return {"energy_kwh": round(c.period_value("gas_m3", self._period) * c.gas_kwh_per_m3, 2), "estimated": True}
+        return {}

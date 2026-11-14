@@ -19,8 +19,14 @@ const STR = {
     outdoor: "Outdoor",
     boiler_target: "Main thermostat",
     burner_today: "Burner today",
-    gas_today: "Gas today",
-    estimate: "estimate",
+    usage: "Consumption and cost",
+    today: "Today",
+    month: "This month",
+    year: "This year",
+    gas_row: "Gas",
+    ac_power: "AC electricity",
+    total: "Total heating",
+    estimate_note: "Gas is estimated from the burner time and corrected at every meter reading. Counting starts when HeatWise is installed.",
     burning: "burning now",
     cop: "AC efficiency (COP)",
     cost: "Cost of 1 kWh of heat",
@@ -61,8 +67,14 @@ const STR = {
     outdoor: "Afară",
     boiler_target: "Termostatul principal",
     burner_today: "Arzător azi",
-    gas_today: "Gaz azi",
-    estimate: "estimare",
+    usage: "Consum și cost",
+    today: "Azi",
+    month: "Luna aceasta",
+    year: "Anul acesta",
+    gas_row: "Gaz",
+    ac_power: "Curent AC",
+    total: "Total încălzire",
+    estimate_note: "Gazul e estimat din timpul de funcționare al arzătorului și corectat la fiecare citire a contorului. Numărătoarea începe de la instalarea HeatWise.",
     burning: "arde acum",
     cop: "Eficiența AC (COP)",
     cost: "Cost 1 kWh căldură",
@@ -326,6 +338,7 @@ class HeatWisePanel extends HTMLElement {
       ${!controlling ? `<div class="hint">${t.observing_hint}</div>` : ""}
       ${house ? this._renderHero(house, decision) : ""}
       ${this._renderStats(h, source)}
+      ${this._renderUsage(h)}
       ${rooms.length ? `<h2>${t.zones}</h2><div class="grid">${rooms.map((z) => this._renderZone(z)).join("")}</div>` : ""}
       <h2>${t.chart}</h2>
       <div class="card chart-card">${this._renderChart()}</div>`;
@@ -417,14 +430,6 @@ class HeatWisePanel extends HTMLElement {
       const burning = this._st(h.entities.burner_running)?.state === "on";
       tiles.push(this._tile("mdi:fire", t.burner_today, `${hh} h ${String(mm).padStart(2, "0")} min`, burning ? `<span class="live"></span>${t.burning}` : ""));
     }
-    const gas = this._st(h.entities.gas_today);
-    if (gas && gas.state !== "unavailable") {
-      const cost = this._st(h.entities.gas_cost_today);
-      const m3 = num(gas.state);
-      const c = cost && cost.state !== "unavailable" && cost.state !== "unknown" ? num(cost.state) : null;
-      const unit = cost?.attributes?.unit_of_measurement || "";
-      tiles.push(this._tile("mdi:meter-gas", t.gas_today, m3 === null ? "–" : `${m3.toFixed(2)} m³`, c === null ? t.estimate : `${c.toFixed(2)} ${esc(unit)} · ${t.estimate}`));
-    }
     if (source) {
       const a = source.attributes;
       if (a.estimated_cop) tiles.push(this._tile("mdi:air-conditioner", t.cop, Number(a.estimated_cop).toFixed(1)));
@@ -433,6 +438,39 @@ class HeatWisePanel extends HTMLElement {
       }
     }
     return tiles.length ? `<div class="stats">${tiles.join("")}</div>` : "";
+  }
+
+  _renderUsage(h) {
+    const t = this._t;
+    const p = h.periods || {};
+    const val = (kind, period) => {
+      const st = this._st(p[kind]?.[period]);
+      if (!st || st.state === "unavailable" || st.state === "unknown") return null;
+      return { v: num(st.state), unit: st.attributes.unit_of_measurement || "" };
+    };
+    const cell = (amount, cost) => {
+      if (!amount && !cost) return `<td class="muted">–</td>`;
+      const a = amount && amount.v !== null ? `${amount.v.toFixed(amount.unit === "m³" ? 2 : 1)} ${esc(amount.unit)}` : "";
+      const c = cost && cost.v !== null ? `${cost.v.toFixed(2)} ${esc(cost.unit)}` : "";
+      return `<td><div class="amt">${c || a}</div>${c && a ? `<div class="sub">${a}</div>` : ""}</td>`;
+    };
+    const periods = ["today", "month", "year"];
+    const rows = [];
+    if (p.gas?.today && this._st(p.gas.today)) {
+      rows.push(`<tr><th><ha-icon icon="mdi:meter-gas"></ha-icon>${t.gas_row}</th>${periods.map((x) => cell(val("gas", x), val("gas_cost", x))).join("")}</tr>`);
+    }
+    if (p.ac_energy?.today && this._st(p.ac_energy.today)) {
+      rows.push(`<tr><th><ha-icon icon="mdi:air-conditioner"></ha-icon>${t.ac_power}</th>${periods.map((x) => cell(val("ac_energy", x), val("ac_cost", x))).join("")}</tr>`);
+    }
+    if (!rows.length) return "";
+    if (p.heating_cost?.today && this._st(p.heating_cost.today)) {
+      rows.push(`<tr class="total"><th><ha-icon icon="mdi:cash"></ha-icon>${t.total}</th>${periods.map((x) => cell(null, val("heating_cost", x))).join("")}</tr>`);
+    }
+    return `<h2>${t.usage}</h2>
+      <div class="card usage"><table>
+        <thead><tr><th></th>${periods.map((x) => `<th>${t[x]}</th>`).join("")}</tr></thead>
+        <tbody>${rows.join("")}</tbody></table>
+        <div class="note">${t.estimate_note}</div></div>`;
   }
 
   _tile(icon, label, value, sub = "") {
@@ -624,6 +662,17 @@ const CSS = `
   .tile-sub { font-size:12px; color:var(--secondary-text-color); display:flex; align-items:center; gap:5px; }
   .live { width:8px; height:8px; border-radius:50%; background:var(--hw-heat); animation:pulse 1.6s infinite; }
   @keyframes pulse { 0%{opacity:1} 50%{opacity:.3} 100%{opacity:1} }
+  .usage table { width:100%; border-collapse:collapse; }
+  .usage th, .usage td { padding:10px 8px; text-align:right; border-bottom:1px solid var(--divider-color); }
+  .usage thead th { font-size:12px; font-weight:500; color:var(--secondary-text-color); text-transform:uppercase; letter-spacing:.05em; }
+  .usage tbody th { text-align:left; font-weight:500; white-space:nowrap; }
+  .usage tbody th ha-icon { --mdc-icon-size:18px; color:var(--primary-color); margin-right:8px; vertical-align:-3px; }
+  .usage .amt { font-size:17px; font-weight:500; }
+  .usage .sub { font-size:12px; color:var(--secondary-text-color); }
+  .usage .muted { color:var(--secondary-text-color); }
+  .usage tr.total th, .usage tr.total .amt { color:var(--hw-heat); }
+  .usage tr:last-child th, .usage tr:last-child td { border-bottom:none; }
+  .usage .note { font-size:12px; color:var(--secondary-text-color); margin-top:10px; }
   .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:12px; }
   .zone { display:flex; flex-direction:column; }
   .zone.cold { border-color: color-mix(in srgb, var(--hw-ac) 45%, var(--divider-color)); }

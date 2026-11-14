@@ -1,7 +1,7 @@
 # 🌡️ HeatWise – încălzire inteligentă și hibridă pentru Home Assistant
 
 [![Deschide Home Assistant și arată acest repository în HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
-![Version](https://img.shields.io/badge/version-0.4.0-blue)
+![Version](https://img.shields.io/badge/version-0.5.0-blue)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 ![Local only](https://img.shields.io/badge/cloud-none-success)
 [![Tests](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml/badge.svg)](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml)
@@ -31,7 +31,8 @@ sau AC pe care îl vede Home Assistant, și totul rulează local.
 | ✋ **Respectă modificările manuale** | Schimbi un termostat de mână și modificarea rămâne cât timp alegi tu sau până la următorul pas din program. |
 | 🪟 **Ferestre și zile calde** | O fereastră deschisă coboară camera la protecție la îngheț; peste o temperatură exterioară aleasă de tine, încălzirea se oprește. |
 | ⚡ **Priză pe centrală** (opțional) | O priză inteligentă cu măsurare pe centrală arată când arde arzătorul și cât a mers azi. |
-| ⛽ **Consum și cost gaz** | Din timpul de funcționare al arzătorului, HeatWise estimează gazul consumat azi și în total (m³, kWh, lei), gata pentru panoul **Energie**. Îi dai indexul contorului (de exemplu din integrarea furnizorului) și învață singur câți m³ arde pe oră din fiecare citire. |
+| ⛽ **Consum și cost gaz** | Din timpul de funcționare al arzătorului, HeatWise estimează gazul consumat azi, luna aceasta, anul acesta (m³, kWh, lei) și în total, gata pentru panoul **Energie**. Îi dai indexul contorului (de exemplu din integrarea furnizorului) și învață singur câți m³ arde pe oră din fiecare citire. |
+| 🔌 **Curentul AC-urilor și costul total** | Cu un senzor de putere pe fiecare AC (o priză inteligentă), numără energia și costul AC-urilor **cât încălzesc** – azi, luna aceasta, anul acesta – și le adună cu gazul pentru costul total al încălzirii. |
 | 👀 **Mod doar observă** | Oprești *Control HeatWise* și îți arată ce ar face, fără să atingă vreun aparat. Ideal ca să-l încerci lângă ce ai acum. |
 | 🧠 **Se explică** | Senzorul *Decizie* și panoul spun pe înțelesul tuturor de ce casa are temperatura pe care o are. |
 | 🖥️ **Panou în bara laterală** | Casa și fiecare cameră, preseturi și temperaturi, sursa de căldură, cât a mers arzătorul, cât costă căldura din gaz și din AC și ultimele 24 de ore. |
@@ -114,6 +115,7 @@ dezactivează automatizările vechi de încălzire și pornește **Control HeatW
 | Preț gaz / curent | — | Un senzor sau o valoare fixă, per kWh. Gaz facturat în m³: 1 m³ ≈ 10,5 kWh. |
 | Tipul centralei / puterea maximă la încălzire / randamentul (%) | nu știu / — / — | Din fișa tehnică. Randamentul e valoarea la sarcină maximă raportată la Hi (de exemplu 97,5 %); gol = media pentru tip (în condensare 0,93, clasică 0,84, nu știu 0,92, raportat la kWh de pe factura de gaz). Din putere pornește estimarea gazului pe oră de funcționare. |
 | Capacitatea AC la încălzire / puterea consumată (W) | — | Din fișa tehnică (de exemplu 3399 W / 916 W → COP 3,71). Gol = din clasa energetică la încălzire (A+++ … B), altfel un COP mediu de 3,5. |
+| Senzori de putere AC | — | Pe cameră: senzorii de putere (prizele) ai AC-urilor, pentru energia și costul cât încălzesc. |
 | Capetele copiază termostatul principal | oprit | Pe cameră: capetele urmează termostatul centralei în loc de ținta proprie. |
 | Senzor de putere centrală / Arzător pornit peste | — / 30 W | Arzător pornit și timpul de funcționare azi, din priza inteligentă. |
 | Indexul contorului de gaz | — | Un senzor cu indexul în m³ (integrarea furnizorului, numărător de impulsuri…). Fiecare citire nouă recalibrează m³ pe oră de funcționare. |
@@ -130,8 +132,10 @@ dezactivează automatizările vechi de încălzire și pornește **Control HeatW
 | `sensor.…_main_thermostat_target` | Ce cere HeatWise de la termostatul principal. |
 | `sensor.…_heat_source` | `boiler` (centrala) sau `ac`, cu COP-ul estimat și costul unui kWh de căldură din fiecare (doar cu AC). |
 | `sensor.…_burner_runtime_today` / `binary_sensor.…_burner_running` | Doar cu priză pe centrală. |
-| `sensor.…_gas_today` / `sensor.…_gas_total` | Gazul consumat estimat, în m³ (totalul merge în panoul Energie). Doar cu priză pe centrală. |
-| `sensor.…_gas_cost_today` | Costul gazului azi, dacă e setat prețul gazului. |
+| `sensor.…_gas_today` / `…_gas_this_month` / `…_gas_this_year` / `…_gas_total` | Gazul consumat estimat, în m³ (totalul merge în panoul Energie). Doar cu priză pe centrală. |
+| `sensor.…_gas_cost_today` / `…_this_month` / `…_this_year` | Costul gazului, dacă e setat prețul gazului. |
+| `sensor.…_ac_heating_energy_today` / `…_this_month` / `…_this_year` și `…_ac_heating_cost_…` | Energia și costul AC-urilor cât încălzesc. Doar cu senzori de putere pe AC. |
+| `sensor.…_heating_cost_today` / `…_this_month` / `…_this_year` | Gaz și AC împreună. |
 | `sensor.…_gas_per_burner_hour` | Câți m³ pe oră de funcționare folosește acum și dacă i-a învățat din contor. |
 | `binary_sensor.…_anyone_home` | Prezența așa cum o vede HeatWise (doar cu persoane). |
 | `switch.…_heatwise_control` | Oprit = doar observă. |

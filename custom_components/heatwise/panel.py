@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
-
 from homeassistant.components import frontend, panel_custom, websocket_api
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.core import HomeAssistant, callback
@@ -20,6 +19,7 @@ from .const import (
     CONF_ZONE_TRVS,
     DOMAIN,
     HOUSE_ZONE_ID,
+    PERIODS,
 )
 
 PANEL_URL = "heatwise"
@@ -109,8 +109,13 @@ def _house_status(hass: HomeAssistant, entry) -> dict[str, Any]:
             "burner_runtime": _entity(reg, "sensor", f"{eid}_{HOUSE_ZONE_ID}_burner_runtime"),
             "burner_running": _entity(reg, "binary_sensor", f"{eid}_{HOUSE_ZONE_ID}_burner_running"),
             "anyone_home": _entity(reg, "binary_sensor", f"{eid}_{HOUSE_ZONE_ID}_anyone_home"),
-            "gas_today": _entity(reg, "sensor", f"{eid}_{HOUSE_ZONE_ID}_gas_today"),
-            "gas_cost_today": _entity(reg, "sensor", f"{eid}_{HOUSE_ZONE_ID}_gas_cost_today"),
+        },
+        "periods": {
+            kind: {
+                period: _entity(reg, "sensor", f"{eid}_{HOUSE_ZONE_ID}_{kind}_{period}")
+                for period in PERIODS
+            }
+            for kind in ("gas", "gas_cost", "ac_energy", "ac_cost", "heating_cost")
         },
         "zones": zones,
         "source_text": controller.explanation() if plan else None,

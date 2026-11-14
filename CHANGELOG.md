@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0 - 2026-11-14
+
+- Consumption and cost for today, this month and this year: gas (m³ and money), AC electricity while heating (kWh and money, from the ACs' power sensors) and the total cost of heating
+- Costs are booked with the price in force at the time, so a price change does not rewrite the past
+- Panel: "Consumption and cost" table with today / this month / this year
+- New per-room option: AC power sensors
+
 ## 0.4.0 - 2026-11-14
 
 - New "Boiler and air conditioner" page at setup and in Configure: boiler type, maximum heating power and efficiency, AC heating capacity and power input or energy class, all from the datasheet and all optional

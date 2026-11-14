@@ -60,6 +60,11 @@ CONF_ZONE_SENSOR = "temp_sensor"
 CONF_ZONE_TRVS = "trvs"
 CONF_ZONE_ACS = "acs"
 CONF_ZONE_FOLLOW_BOILER = "trv_follow_boiler"
+CONF_ZONE_AC_POWER = "ac_power_sensors"
+
+# Consumption periods
+PERIODS = ("today", "month", "year")
+AC_POWER_MAX_GAP_SECONDS = 900
 
 DEFAULT_COMFORT = 21.0
 DEFAULT_ECO = 18.0

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
 import logging
+from datetime import datetime, timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -25,8 +25,8 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from . import engine
-from .equipment import Equipment, resolve as resolve_equipment
 from .const import (
+    AC_POWER_MAX_GAP_SECONDS,
     CONF_AC_MIN_OUTDOOR,
     CONF_AC_OFFSET,
     CONF_AC_THRESHOLD,
@@ -53,6 +53,7 @@ from .const import (
     CONF_SCHEDULE,
     CONF_WARM_OFF,
     CONF_WINDOWS,
+    CONF_ZONE_AC_POWER,
     CONF_ZONE_ACS,
     CONF_ZONE_FOLLOW_BOILER,
     CONF_ZONE_ID,
@@ -79,10 +80,13 @@ from .const import (
     GAS_RATE_MIN,
     HOUSE_ZONE_ID,
     OWN_COMMAND_GRACE_SECONDS,
+    PERIODS,
     SIGNAL_UPDATE,
     STORAGE_VERSION,
     WINDOW_DELAY_SECONDS,
 )
+from .equipment import Equipment
+from .equipment import resolve as resolve_equipment
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -129,8 +133,10 @@ class HeatWiseController:
         self.burner_seconds = 0.0
         self.burner_on_since: datetime | None = None
         self.burner_total_seconds = 0.0
-        self.gas_today_m3 = 0.0
         self.gas_total_m3 = 0.0
+        self.period_keys: dict[str, str] = self._current_period_keys()
+        self.period_values: dict[str, dict[str, float]] = {p: self._empty_period() for p in PERIODS}
+        self._ac_power_last: dict[str, tuple[float, datetime]] = {}
         self.gas_rate_learned: float | None = None
         self.gas_calibrations = 0
         self.gas_baseline: dict[str, Any] | None = None
@@ -210,7 +216,13 @@ class HeatWiseController:
         self.burner_total_seconds = float(burner.get("total_seconds", 0))
         gas = data.get("gas", {})
         self.gas_total_m3 = float(gas.get("total_m3", 0))
-        self.gas_today_m3 = float(gas.get("today_m3", 0)) if same_day else 0.0
+        stored = data.get("periods", {})
+        keys = stored.get("keys", {})
+        for period in PERIODS:
+            if keys.get(period) == self.period_keys[period]:
+                self.period_values[period].update(stored.get("values", {}).get(period, {}))
+        if not stored and same_day:
+            self.period_values["today"]["gas_m3"] = float(gas.get("today_m3", 0))
         self.gas_rate_learned = gas.get("rate_learned")
         self.gas_calibrations = int(gas.get("calibrations", 0))
         self.gas_baseline = gas.get("baseline")
@@ -258,8 +270,8 @@ class HeatWiseController:
                 "seconds": self.burner_runtime_seconds,
                 "total_seconds": self.burner_total_live_seconds,
             },
+            "periods": {"keys": self.period_keys, "values": self.period_values},
             "gas": {
-                "today_m3": self.gas_today_live,
                 "total_m3": self.gas_total_live,
                 "rate_learned": self.gas_rate_learned,
                 "calibrations": self.gas_calibrations,
@@ -292,13 +304,16 @@ class HeatWiseController:
             for key in (CONF_ZONE_SENSOR, CONF_SCHEDULE):
                 if zone.get(key):
                     ids.append(zone[key])
-            for key in (CONF_ZONE_TRVS, CONF_ZONE_ACS, CONF_WINDOWS):
+            for key in (CONF_ZONE_TRVS, CONF_ZONE_ACS, CONF_WINDOWS, CONF_ZONE_AC_POWER):
                 ids.extend(zone.get(key, []))
         return sorted(set(ids))
 
     # ------------------------------------------------------------------ events
     @callback
     def _on_interval(self, _now: datetime) -> None:
+        for zone in self.zones:
+            for eid in zone.get(CONF_ZONE_AC_POWER, []):
+                self._integrate_ac_power(zone, eid, self.hass.states.get(eid))
         self.async_schedule_evaluate(delay=0)
 
     @callback
@@ -323,6 +338,9 @@ class HeatWiseController:
             zid = zone[CONF_ZONE_ID]
             if entity_id in zone.get(CONF_ZONE_TRVS, []):
                 self._detect_manual(zid, entity_id, old, new)
+            elif entity_id in zone.get(CONF_ZONE_AC_POWER, []):
+                self._integrate_ac_power(zone, entity_id, old)
+                self._ac_power_last[entity_id] = (_float(new) or 0.0, dt_util.utcnow())
             elif entity_id in zone.get(CONF_ZONE_ACS, []):
                 self._detect_ac_change(entity_id, old, new)
             elif entity_id == zone.get(CONF_SCHEDULE):
@@ -410,8 +428,11 @@ class HeatWiseController:
         self.burner_seconds += seconds
         self.burner_total_seconds += seconds
         gas = seconds / 3600 * self.gas_rate
-        self.gas_today_m3 += gas
         self.gas_total_m3 += gas
+        self._add_period("gas_m3", gas)
+        price = self.gas_price_kwh
+        if price is not None:
+            self._add_period("gas_cost", gas * self.gas_kwh_per_m3 * price)
         self.burner_on_since = now
 
     @callback
@@ -422,7 +443,7 @@ class HeatWiseController:
         self._flush_burner(dt_util.utcnow())
         self.burner_day = today
         self.burner_seconds = 0.0
-        self.gas_today_m3 = 0.0
+        self._roll_periods()
         self._save()
 
     @callback
@@ -465,7 +486,7 @@ class HeatWiseController:
 
     @property
     def gas_today_live(self) -> float:
-        return self.gas_today_m3 + self._live_seconds() / 3600 * self.gas_rate
+        return self.period_value("gas_m3", "today")
 
     @property
     def gas_total_live(self) -> float:
@@ -477,10 +498,81 @@ class HeatWiseController:
 
     @property
     def gas_cost_today(self) -> float | None:
-        price = self.gas_price_kwh
-        if price is None:
+        if self.gas_price_kwh is None:
             return None
-        return self.gas_today_live * self.gas_kwh_per_m3 * price
+        return self.period_value("gas_cost", "today")
+
+    # ------------------------------------------------------------- periods
+    @staticmethod
+    def _empty_period() -> dict[str, float]:
+        return {"gas_m3": 0.0, "gas_cost": 0.0, "ac_kwh": 0.0, "ac_cost": 0.0}
+
+    @staticmethod
+    def _current_period_keys() -> dict[str, str]:
+        today = dt_util.now().date()
+        return {"today": today.isoformat(), "month": today.strftime("%Y-%m"), "year": str(today.year)}
+
+    @callback
+    def _roll_periods(self) -> None:
+        keys = self._current_period_keys()
+        for period in PERIODS:
+            if keys[period] != self.period_keys.get(period):
+                self.period_values[period] = self._empty_period()
+        self.period_keys = keys
+
+    @callback
+    def _add_period(self, metric: str, amount: float) -> None:
+        self._roll_periods()
+        for period in PERIODS:
+            self.period_values[period][metric] += amount
+
+    def period_value(self, metric: str, period: str) -> float:
+        """Booked value plus the part of a burner run still in progress."""
+        value = self.period_values.get(period, {}).get(metric, 0.0)
+        if self.period_keys.get(period) != self._current_period_keys()[period]:
+            value = 0.0
+        live_gas = self._live_seconds() / 3600 * self.gas_rate
+        if metric == "gas_m3":
+            value += live_gas
+        elif metric == "gas_cost" and self.gas_price_kwh is not None:
+            value += live_gas * self.gas_kwh_per_m3 * self.gas_price_kwh
+        return value
+
+    def heating_cost(self, period: str) -> float:
+        return self.period_value("gas_cost", period) + self.period_value("ac_cost", period)
+
+    @property
+    def has_ac_power(self) -> bool:
+        return any(z.get(CONF_ZONE_AC_POWER) for z in self.zones)
+
+    @property
+    def electricity_price_kwh(self) -> float | None:
+        return self._price(CONF_EL_PRICE_ENTITY, CONF_EL_PRICE)
+
+    @callback
+    def _integrate_ac_power(self, zone: dict[str, Any], entity_id: str, state: State | None) -> None:
+        """Add the energy an AC used since the last reading, while it was heating."""
+        now = dt_util.utcnow()
+        last = self._ac_power_last.get(entity_id)
+        watts = _float(state)
+        self._ac_power_last[entity_id] = (watts or 0.0, now)
+        if last is None:
+            return
+        last_watts, since = last
+        seconds = min((now - since).total_seconds(), AC_POWER_MAX_GAP_SECONDS)
+        if seconds <= 0 or last_watts <= 0:
+            return
+        heating = any(
+            (st := self.hass.states.get(ac)) is not None and st.state == "heat"
+            for ac in zone.get(CONF_ZONE_ACS, [])
+        )
+        if not heating:
+            return
+        kwh = last_watts * seconds / 3600 / 1000
+        self._add_period("ac_kwh", kwh)
+        price = self.electricity_price_kwh
+        if price is not None:
+            self._add_period("ac_cost", kwh * price)
 
     @callback
     def _gas_meter_update(self, state: State | None) -> None:

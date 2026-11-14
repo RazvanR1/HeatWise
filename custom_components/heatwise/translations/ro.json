@@ -130,7 +130,11 @@
           "comfort_temp": "Confort (gol = ca la casă)",
           "eco_temp": "Eco (gol = ca la casă)",
           "away_temp": "Plecat (gol = ca la casă)",
-          "trv_follow_boiler": "Capetele copiază termostatul principal"
+          "trv_follow_boiler": "Capetele copiază termostatul principal",
+          "ac_power_sensors": "Senzori de putere AC (opțional)"
+        },
+        "data_description": {
+          "ac_power_sensors": "Prize inteligente sau contoare cu puterea AC-urilor din cameră. HeatWise numără energia și costul cât încălzesc."
         }
       },
       "zone": {
@@ -146,7 +150,11 @@
           "comfort_temp": "Confort (gol = ca la casă)",
           "eco_temp": "Eco (gol = ca la casă)",
           "away_temp": "Plecat (gol = ca la casă)",
-          "trv_follow_boiler": "Capetele copiază termostatul principal"
+          "trv_follow_boiler": "Capetele copiază termostatul principal",
+          "ac_power_sensors": "Senzori de putere AC (opțional)"
+        },
+        "data_description": {
+          "ac_power_sensors": "Prize inteligente sau contoare cu puterea AC-urilor din cameră. HeatWise numără energia și costul cât încălzesc."
         }
       },
       "edit_zone": {
@@ -258,6 +266,45 @@
       },
       "gas_rate": {
         "name": "Gaz pe oră de funcționare"
+      },
+      "gas_month": {
+        "name": "Gaz luna aceasta"
+      },
+      "gas_year": {
+        "name": "Gaz anul acesta"
+      },
+      "gas_cost_month": {
+        "name": "Cost gaz luna aceasta"
+      },
+      "gas_cost_year": {
+        "name": "Cost gaz anul acesta"
+      },
+      "ac_energy_today": {
+        "name": "Curent AC la încălzire azi"
+      },
+      "ac_energy_month": {
+        "name": "Curent AC la încălzire luna aceasta"
+      },
+      "ac_energy_year": {
+        "name": "Curent AC la încălzire anul acesta"
+      },
+      "ac_cost_today": {
+        "name": "Cost AC la încălzire azi"
+      },
+      "ac_cost_month": {
+        "name": "Cost AC la încălzire luna aceasta"
+      },
+      "ac_cost_year": {
+        "name": "Cost AC la încălzire anul acesta"
+      },
+      "heating_cost_today": {
+        "name": "Cost încălzire azi"
+      },
+      "heating_cost_month": {
+        "name": "Cost încălzire luna aceasta"
+      },
+      "heating_cost_year": {
+        "name": "Cost încălzire anul acesta"
       }
     },
     "binary_sensor": {
