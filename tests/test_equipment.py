@@ -47,7 +47,7 @@ def test_razvan_beretta_and_gree():
 
 
 def test_type_and_energy_class_fallbacks():
-    r = eq.resolve({"boiler_type": "conventional", "ac_energy_class": "A+"})
+    r = eq.resolve({"boiler_type": "conventional", "ac_energy_class": "a1p"})
     assert r.boiler_efficiency == 0.84 and r.boiler_efficiency_source == "boiler_type"
     assert r.cop_at_7 == 3.72 and r.cop_source == "energy_class"
 

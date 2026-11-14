@@ -44,11 +44,11 @@ HI_TO_HS = 0.902
 
 # Heating energy class (EU label) -> lower bound of SCOP for that class.
 SCOP_BY_CLASS = {
-    "A+++": 5.1,
-    "A++": 4.6,
-    "A+": 4.0,
-    "A": 3.4,
-    "B": 3.1,
+    "a3p": 5.1,  # A+++
+    "a2p": 4.6,  # A++
+    "a1p": 4.0,  # A+
+    "a": 3.4,
+    "b": 3.1,
 }
 # COP at 7 °C is usually a little below the seasonal SCOP on the datasheet.
 COP7_PER_SCOP = 0.93
