@@ -99,6 +99,7 @@ def _house_status(hass: HomeAssistant, entry) -> dict[str, Any]:
         "name": controller.name,
         "has_ac": controller.has_ac,
         "has_power": controller.has_power,
+        "language": controller.language_setting,
         "outdoor": controller.config.get(CONF_OUTDOOR),
         "entities": {
             "control": _entity(reg, "switch", f"{eid}_{HOUSE_ZONE_ID}_control"),

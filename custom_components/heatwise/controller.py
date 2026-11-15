@@ -19,6 +19,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import (
     async_call_later,
     async_track_state_change_event,
+    async_track_time_change,
     async_track_time_interval,
 )
 from homeassistant.helpers.storage import Store
@@ -30,6 +31,8 @@ from .const import (
     CONF_AC_MIN_OUTDOOR,
     CONF_AC_OFFSET,
     CONF_AC_THRESHOLD,
+    CONF_ARRIVAL_KM,
+    CONF_ARRIVAL_SENSORS,
     CONF_AWAY,
     CONF_AWAY_DELAY,
     CONF_BOILER,
@@ -46,12 +49,19 @@ from .const import (
     CONF_GAS_PRICE_ENTITY,
     CONF_HOUSE_SENSOR,
     CONF_HYBRID_MODE,
+    CONF_LANGUAGE,
     CONF_NAME,
+    CONF_NOTIFY,
+    CONF_NOTIFY_OFFLINE,
+    CONF_NOTIFY_WINDOW,
     CONF_OUTDOOR,
     CONF_OVERRIDE_MINUTES,
     CONF_PERSONS,
+    CONF_PREHEAT,
+    CONF_PREHEAT_MAX,
     CONF_SCHEDULE,
     CONF_WARM_OFF,
+    CONF_WEEKLY_REPORT,
     CONF_WINDOWS,
     CONF_ZONE_AC_POWER,
     CONF_ZONE_ACS,
@@ -65,6 +75,7 @@ from .const import (
     DEFAULT_AC_MIN_OUTDOOR,
     DEFAULT_AC_OFFSET,
     DEFAULT_AC_THRESHOLD,
+    DEFAULT_ARRIVAL_KM,
     DEFAULT_AWAY,
     DEFAULT_AWAY_DELAY,
     DEFAULT_BURNER_THRESHOLD,
@@ -72,21 +83,29 @@ from .const import (
     DEFAULT_ECO,
     DEFAULT_FROST,
     DEFAULT_GAS_KWH_PER_M3,
+    DEFAULT_HEAT_RATE,
     DEFAULT_OVERRIDE_MINUTES,
+    DEFAULT_PREHEAT_MAX,
     DOMAIN,
     EVAL_INTERVAL_SECONDS,
     GAS_CALIBRATION_MIN_HOURS,
     GAS_RATE_MAX,
     GAS_RATE_MIN,
+    HEAT_SESSION_MAX_HOURS,
     HOUSE_ZONE_ID,
+    LANG_AUTO,
+    OFFLINE_MINUTES,
     OWN_COMMAND_GRACE_SECONDS,
-    PERIODS,
+    REPORT_HOUR,
+    REPORT_WEEKDAY,
     SIGNAL_UPDATE,
     STORAGE_VERSION,
+    STORED_PERIODS,
     WINDOW_DELAY_SECONDS,
 )
 from .equipment import Equipment
 from .equipment import resolve as resolve_equipment
+from .smart import ArrivalWatcher, learn_rate, notify_text, preheat_due, weekly_report
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -135,7 +154,16 @@ class HeatWiseController:
         self.burner_total_seconds = 0.0
         self.gas_total_m3 = 0.0
         self.period_keys: dict[str, str] = self._current_period_keys()
-        self.period_values: dict[str, dict[str, float]] = {p: self._empty_period() for p in PERIODS}
+        self.period_values: dict[str, dict[str, float]] = {
+            p: self._empty_period() for p in STORED_PERIODS
+        }
+        self.last_week: dict[str, float] | None = None
+        self.heat_rates: dict[str, float] = {}
+        self._heat_sessions: dict[str, tuple[datetime, float, float]] = {}
+        self.arrival = ArrivalWatcher()
+        self.preheating: dict[str, bool] = {}
+        self._windows_seen: dict[str, bool] = {}
+        self._offline_notified: set[str] = set()
         self._ac_power_last: dict[str, tuple[float, datetime]] = {}
         self.gas_rate_learned: float | None = None
         self.gas_calibrations = 0
@@ -160,8 +188,14 @@ class HeatWiseController:
         return list(self.config.get(CONF_ZONES, []))
 
     @property
+    def language_setting(self) -> str | None:
+        """The language chosen in HeatWise, None to follow Home Assistant."""
+        value = self.config.get(CONF_LANGUAGE, LANG_AUTO)
+        return None if value in (None, "", LANG_AUTO) else value
+
+    @property
     def language(self) -> str:
-        return self.hass.config.language or "en"
+        return self.language_setting or self.hass.config.language or "en"
 
     @property
     def has_ac(self) -> bool:
@@ -218,7 +252,7 @@ class HeatWiseController:
         self.gas_total_m3 = float(gas.get("total_m3", 0))
         stored = data.get("periods", {})
         keys = stored.get("keys", {})
-        for period in PERIODS:
+        for period in STORED_PERIODS:
             if keys.get(period) == self.period_keys[period]:
                 self.period_values[period].update(stored.get("values", {}).get(period, {}))
         if data.get("periods_version", 0) < 2:
@@ -226,6 +260,8 @@ class HeatWiseController:
         self.gas_rate_learned = gas.get("rate_learned")
         self.gas_calibrations = int(gas.get("calibrations", 0))
         self.gas_baseline = gas.get("baseline")
+        self.last_week = stored.get("last_week")
+        self.heat_rates = {k: float(v) for k, v in data.get("heat_rates", {}).items()}
 
         self._unsubs.append(
             async_track_state_change_event(
@@ -235,6 +271,11 @@ class HeatWiseController:
         self._unsubs.append(
             async_track_time_interval(
                 self.hass, self._on_interval, timedelta(seconds=EVAL_INTERVAL_SECONDS)
+            )
+        )
+        self._unsubs.append(
+            async_track_time_change(
+                self.hass, self._on_report_time, hour=REPORT_HOUR, minute=0, second=0
             )
         )
         if self.has_power:
@@ -270,7 +311,12 @@ class HeatWiseController:
                 "seconds": self.burner_runtime_seconds,
                 "total_seconds": self.burner_total_live_seconds,
             },
-            "periods": {"keys": self.period_keys, "values": self.period_values},
+            "periods": {
+                "keys": self.period_keys,
+                "values": self.period_values,
+                "last_week": self.last_week,
+            },
+            "heat_rates": self.heat_rates,
             "periods_version": 2,
             "gas": {
                 "total_m3": self.gas_total_live,
@@ -300,6 +346,9 @@ class HeatWiseController:
             if c.get(key):
                 ids.append(c[key])
         ids.extend(c.get(CONF_PERSONS, []))
+        for eid in c.get(CONF_ARRIVAL_SENSORS, []):
+            ids.append(eid)
+            ids.append(ArrivalWatcher.direction_entity(eid))
         ids.extend(c.get(CONF_WINDOWS, []))
         for zone in self.zones:
             for key in (CONF_ZONE_SENSOR, CONF_SCHEDULE):
@@ -315,6 +364,7 @@ class HeatWiseController:
         for zone in self.zones:
             for eid in zone.get(CONF_ZONE_AC_POWER, []):
                 self._integrate_ac_power(zone, eid, self.hass.states.get(eid))
+        self.hass.async_create_task(self._check_offline())
         self.async_schedule_evaluate(delay=0)
 
     @callback
@@ -431,6 +481,7 @@ class HeatWiseController:
         gas = seconds / 3600 * self.gas_rate
         self.gas_total_m3 += gas
         self._add_period("gas_m3", gas)
+        self._add_period("burner_h", seconds / 3600)
         price = self.gas_price_kwh
         if price is not None:
             self._add_period("gas_cost", gas * self.gas_kwh_per_m3 * price)
@@ -527,26 +578,34 @@ class HeatWiseController:
 
     @staticmethod
     def _empty_period() -> dict[str, float]:
-        return {"gas_m3": 0.0, "gas_cost": 0.0, "ac_kwh": 0.0, "ac_cost": 0.0}
+        return {"gas_m3": 0.0, "gas_cost": 0.0, "ac_kwh": 0.0, "ac_cost": 0.0, "burner_h": 0.0}
 
     @staticmethod
     def _current_period_keys() -> dict[str, str]:
         today = dt_util.now().date()
-        return {"today": today.isoformat(), "month": today.strftime("%Y-%m"), "year": str(today.year)}
+        return {
+            "today": today.isoformat(),
+            "week": "{}-W{:02d}".format(*today.isocalendar()[:2]),
+            "month": today.strftime("%Y-%m"),
+            "year": str(today.year),
+        }
 
     @callback
     def _roll_periods(self) -> None:
         keys = self._current_period_keys()
-        for period in PERIODS:
+        for period in STORED_PERIODS:
             if keys[period] != self.period_keys.get(period):
+                if period == "week" and self.period_keys.get("week"):
+                    self.last_week = dict(self.period_values["week"])
                 self.period_values[period] = self._empty_period()
         self.period_keys = keys
 
     @callback
     def _add_period(self, metric: str, amount: float) -> None:
         self._roll_periods()
-        for period in PERIODS:
-            self.period_values[period][metric] += amount
+        for period in STORED_PERIODS:
+            values = self.period_values[period]
+            values[metric] = values.get(metric, 0.0) + amount
 
     def period_value(self, metric: str, period: str) -> float:
         """Booked value plus the part of a burner run still in progress."""
@@ -554,7 +613,9 @@ class HeatWiseController:
         if self.period_keys.get(period) != self._current_period_keys()[period]:
             value = 0.0
         live_gas = self._live_seconds() / 3600 * self.gas_rate
-        if metric == "gas_m3":
+        if metric == "burner_h":
+            value += self._live_seconds() / 3600
+        elif metric == "gas_m3":
             value += live_gas
         elif metric == "gas_cost" and self.gas_price_kwh is not None:
             value += live_gas * self.gas_kwh_per_m3 * self.gas_price_kwh
@@ -807,28 +868,197 @@ class HeatWiseController:
             cop_at_7=self.equipment.cop_at_7,
         )
 
-    def _zone_state(self, zone_id: str, schedule: str | None, windows: list[str]) -> engine.ZoneState:
+    def _zone_state(
+        self,
+        zone_id: str,
+        schedule: str | None,
+        windows: list[str],
+        preheat_schedule: str | None = None,
+        comfort: float | None = None,
+    ) -> engine.ZoneState:
         override = self.override_of(zone_id)
+        room = self.room_temperature(zone_id)
+        preheat = self._preheat(zone_id, preheat_schedule or schedule, room, comfort)
+        self.preheating[zone_id] = preheat
         return engine.ZoneState(
-            room_temp=self.room_temperature(zone_id),
+            room_temp=room,
             schedule_on=self._schedule_on(schedule),
             window_open=self._windows_open(windows),
             preset=self.preset_of(zone_id),
             override_temp=override[0] if override else None,
             enabled=self.enabled.get(zone_id, True),
+            preheat=preheat,
         )
+
+    # ------------------------------------------------------------ smart start
+    def heat_rate(self, zone_id: str) -> float:
+        return self.heat_rates.get(zone_id) or self.heat_rates.get(HOUSE_ZONE_ID) or DEFAULT_HEAT_RATE
+
+    def _preheat(
+        self, zone_id: str, schedule: str | None, room: float | None, comfort: float | None
+    ) -> bool:
+        """Start comfort early so the room is warm when the schedule turns on."""
+        if not self.config.get(CONF_PREHEAT, True) or comfort is None or room is None:
+            return False
+        state = self._state(schedule)
+        if state is None or state.state != "off":
+            return False
+        next_event = state.attributes.get("next_event")
+        if isinstance(next_event, str):
+            next_event = dt_util.parse_datetime(next_event)
+        if not isinstance(next_event, datetime):
+            return False
+        return preheat_due(
+            dt_util.as_utc(next_event),
+            dt_util.utcnow(),
+            comfort - room,
+            self.heat_rate(zone_id),
+            float(self.config.get(CONF_PREHEAT_MAX, DEFAULT_PREHEAT_MAX)),
+        )
+
+    def _heat_driver(self, zone_id: str) -> str | None:
+        """The device whose target drives the heating of a zone (for learning)."""
+        if zone_id == HOUSE_ZONE_ID:
+            return self.config.get(CONF_BOILER)
+        zone = self._zone(zone_id) or {}
+        devices = zone.get(CONF_ZONE_TRVS, []) + zone.get(CONF_ZONE_ACS, [])
+        return devices[0] if devices else None
+
+    @callback
+    def _learn_heat(self, zone_id: str) -> None:
+        """Measure how fast a zone warms up after its target is raised."""
+        state = self._state(self._heat_driver(zone_id))
+        room = self.room_temperature(zone_id)
+        target = _float(state, ATTR_TEMPERATURE)
+        active = (
+            state is not None
+            and state.state in ("heat", "heat_cool", "auto")
+            and target is not None
+            and room is not None
+        )
+        now = dt_util.utcnow()
+        session = self._heat_sessions.get(zone_id)
+        if session is None:
+            if active and target - room >= 0.8:
+                self._heat_sessions[zone_id] = (now, room, target)
+            return
+        started, start_temp, session_target = session
+        hours = (now - started).total_seconds() / 3600
+        if not active or target < session_target - 0.01 or hours > HEAT_SESSION_MAX_HOURS:
+            self._heat_sessions.pop(zone_id, None)
+            return
+        if room >= session_target - 0.1:
+            self._heat_sessions.pop(zone_id, None)
+            rate = learn_rate(self.heat_rates.get(zone_id), room - start_temp, hours)
+            if rate is not None:
+                self.heat_rates[zone_id] = rate
+                _LOGGER.info("HeatWise learned %s warms up %.2f °C/h", self.zone_name(zone_id), rate)
+                self._save()
+
+    def _arriving(self) -> bool:
+        sensors = self.config.get(CONF_ARRIVAL_SENSORS, [])
+        if not sensors:
+            return False
+        readings: dict[str, tuple[float | None, str | None]] = {}
+        for eid in sensors:
+            state = self._state(eid)
+            if state is None or state.state in (STATE_UNAVAILABLE, STATE_UNKNOWN):
+                continue
+            km = ArrivalWatcher.to_km(state.state, state.attributes.get("unit_of_measurement"))
+            direction = self._state(ArrivalWatcher.direction_entity(eid))
+            readings[eid] = (km, direction.state if direction is not None else None)
+        return self.arrival.update(
+            readings,
+            float(self.config.get(CONF_ARRIVAL_KM, DEFAULT_ARRIVAL_KM)),
+            self.anyone_home,
+            dt_util.utcnow(),
+        )
+
+    # ----------------------------------------------------------- notifications
+    async def notify(self, title: str, message: str) -> None:
+        for target in self.config.get(CONF_NOTIFY, []):
+            domain, _, service = target.partition(".")
+            if not service:
+                domain, service = "notify", target
+            await self._call(domain, service, {"title": title, "message": message})
+
+    @callback
+    def _check_windows(self, states: dict[str, engine.ZoneState]) -> None:
+        for zone_id, st in states.items():
+            before = self._windows_seen.get(zone_id)
+            self._windows_seen[zone_id] = st.window_open
+            if before is False and st.window_open and self.config.get(CONF_NOTIFY_WINDOW, True):
+                key = "window_lowered" if self.control_enabled else "window"
+                self.hass.async_create_task(
+                    self.notify(
+                        notify_text("window_title", self.language),
+                        notify_text(key, self.language, zone=self.zone_name(zone_id)),
+                    )
+                )
+
+    def _devices(self) -> list[str]:
+        ids = [self.config[CONF_BOILER]] if self.config.get(CONF_BOILER) else []
+        for zone in self.zones:
+            ids += zone.get(CONF_ZONE_TRVS, []) + zone.get(CONF_ZONE_ACS, [])
+        return ids
+
+    async def _check_offline(self) -> None:
+        if not self.config.get(CONF_NOTIFY_OFFLINE, True) or not self.config.get(CONF_NOTIFY):
+            return
+        now = dt_util.utcnow()
+        lang = self.language
+        for eid in self._devices():
+            state = self._state(eid)
+            name = state.name if state is not None else eid
+            down = state is None or state.state == STATE_UNAVAILABLE
+            if down and eid not in self._offline_notified:
+                since = state.last_changed if state is not None else None
+                if since is not None and now - since >= timedelta(minutes=OFFLINE_MINUTES):
+                    self._offline_notified.add(eid)
+                    await self.notify(
+                        notify_text("offline_title", lang),
+                        notify_text("offline", lang, device=name, minutes=OFFLINE_MINUTES),
+                    )
+            elif not down and eid in self._offline_notified:
+                self._offline_notified.discard(eid)
+                await self.notify(notify_text("offline_title", lang), notify_text("online", lang, device=name))
+
+    async def _on_report_time(self, now: datetime) -> None:
+        if dt_util.as_local(now).weekday() != REPORT_WEEKDAY:
+            return
+        await self.async_send_weekly_report()
+
+    async def async_send_weekly_report(self) -> None:
+        if not self.config.get(CONF_WEEKLY_REPORT, True) or not self.config.get(CONF_NOTIFY):
+            return
+        self._roll_periods()
+        week = {m: self.period_value(m, "week") for m in self._empty_period()}
+        text = weekly_report(
+            week,
+            self.last_week,
+            self.language,
+            self.hass.config.currency,
+            self.has_power,
+            self.has_ac_power,
+        )
+        await self.notify(notify_text("report_title", self.language), text)
 
     # -------------------------------------------------------------- evaluation
     async def async_evaluate(self) -> None:
         self._roll_burner_day()
         c = self.config
         self.anyone_home = self._presence()
+        arriving = self._arriving()
+        house_temps = self._house_temps()
         house_cfg = engine.ZoneConfig(
             HOUSE_ZONE_ID, self.name, self._house_temps(), is_house=True
         )
         states = {
             HOUSE_ZONE_ID: self._zone_state(
-                HOUSE_ZONE_ID, c.get(CONF_SCHEDULE), c.get(CONF_WINDOWS, [])
+                HOUSE_ZONE_ID,
+                c.get(CONF_SCHEDULE),
+                c.get(CONF_WINDOWS, []),
+                comfort=house_temps.comfort,
             )
         }
         zone_cfgs: list[engine.ZoneConfig] = []
@@ -844,7 +1074,13 @@ class HeatWiseController:
                     trv_follow_boiler=bool(zone.get(CONF_ZONE_FOLLOW_BOILER, False)),
                 )
             )
-            st = self._zone_state(zid, zone.get(CONF_SCHEDULE), zone.get(CONF_WINDOWS, []))
+            st = self._zone_state(
+                zid,
+                zone.get(CONF_SCHEDULE),
+                zone.get(CONF_WINDOWS, []),
+                preheat_schedule=zone.get(CONF_SCHEDULE) or c.get(CONF_SCHEDULE),
+                comfort=self._zone_temps(zone).comfort,
+            )
             st.ac_ours_running, st.ac_user_controlled = self._ac_flags(zone)
             states[zid] = st
 
@@ -856,7 +1092,11 @@ class HeatWiseController:
             ),
             previous_source=self.previous_source,
             previous_warm_off=self.previous_warm_off,
+            arriving=arriving,
         )
+        for zid in states:
+            self._learn_heat(zid)
+        self._check_windows(states)
         plan = engine.evaluate(house_cfg, zone_cfgs, states, house, self._hybrid())
         self.zone_states = states
         if plan.source != self.previous_source or plan.warm_off != self.previous_warm_off:
@@ -974,6 +1214,16 @@ class HeatWiseController:
             "ac_owned": sorted(self.ac_owned),
             "ac_blocked": self.ac_blocked,
             "burner_runtime_seconds": self.burner_runtime_seconds,
+            "language": self.language,
+            "heat_rates": self.heat_rates,
+            "heat_sessions": {k: [v[0].isoformat(), v[1], v[2]] for k, v in self._heat_sessions.items()},
+            "preheating": self.preheating,
+            "arrival": {
+                "until": self.arrival.until.isoformat() if self.arrival.until else None,
+                "who": self.arrival.who,
+                "farthest_km": self.arrival.farthest,
+            },
+            "last_week": self.last_week,
             "equipment": vars(self.equipment),
             "gas": {
                 "rate": self.gas_rate,

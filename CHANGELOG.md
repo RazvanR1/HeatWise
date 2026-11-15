@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0 - 2026-11-15
+
+- Warm on time: HeatWise learns how fast every room warms up and starts comfort early, so the room is warm when the schedule turns to comfort
+- Coming home: with Proximity distance sensors the house goes back to comfort while someone is heading home
+- Notifications to any notify service: window opened, a thermostat, valve or AC that stopped responding, and a weekly report on Sunday at 19:00 with gas, AC electricity and cost
+- Language option for HeatWise only (automatic, English, Romanian), used by the panel, the decision texts and the notifications
+- The house device is created before the rooms, removing the `via_device` deprecation warning
+
 ## 0.5.1 - 2026-11-14
 
 - Upgrading from 0.3/0.4: the gas already counted now fills this month and this year, with its cost, instead of starting from zero

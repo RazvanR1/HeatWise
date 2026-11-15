@@ -1,7 +1,7 @@
 # 🌡️ HeatWise – încălzire inteligentă și hibridă pentru Home Assistant
 
 [![Deschide Home Assistant și arată acest repository în HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
-![Version](https://img.shields.io/badge/version-0.5.1-blue)
+![Version](https://img.shields.io/badge/version-0.6.0-blue)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 ![Local only](https://img.shields.io/badge/cloud-none-success)
 [![Tests](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml/badge.svg)](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml)
@@ -28,16 +28,19 @@ sau AC pe care îl vede Home Assistant, și totul rulează local.
 | 🔥 **Ține centrala deoparte** | Cât încălzesc AC-urile, termostatul principal coboară la temperatura „plecat”, ca gazul și curentul să nu încălzească casa în același timp. Camerele cu capete termostatice pot cere căldură de la centrală sau pot copia termostatul principal. |
 | 🏠 **Știe cine e acasă** | Confort cât e cineva acasă, temperatura „plecat” când casa e goală. Întârzierea pornește doar când cineva chiar pleacă. |
 | 📅 **Urmează programul tău** | Orice ajutor Program (Schedule) sau input boolean: pornit = confort, oprit = eco. Camerele pot avea program propriu sau urmează casa. |
+| ⏰ **Cald la timp** | Învață cât de repede se încălzește fiecare cameră și pornește din timp, ca în cameră să fie deja cald când programul trece pe confort – nu o oră mai târziu. |
+| 🚗 **Încălzește când vii spre casă** | Cu senzorii de distanță din integrarea Proximity a Home Assistant ridică temperatura casei de la „plecat” la confort cât timp cineva conduce spre casă. |
 | ✋ **Respectă modificările manuale** | Schimbi un termostat de mână și modificarea rămâne cât timp alegi tu sau până la următorul pas din program. |
 | 🪟 **Ferestre și zile calde** | O fereastră deschisă coboară camera la protecție la îngheț; peste o temperatură exterioară aleasă de tine, încălzirea se oprește. |
 | ⚡ **Priză pe centrală** (opțional) | O priză inteligentă cu măsurare pe centrală arată când arde arzătorul și cât a mers azi. |
 | ⛽ **Consum și cost gaz** | Din timpul de funcționare al arzătorului, HeatWise estimează gazul consumat azi, luna aceasta, anul acesta (m³, kWh, lei) și în total, gata pentru panoul **Energie**. Îi dai indexul contorului (de exemplu din integrarea furnizorului) și învață singur câți m³ arde pe oră din fiecare citire. |
 | 🔌 **Curentul AC-urilor și costul total** | Cu un senzor de putere pe fiecare AC (o priză inteligentă), numără energia și costul AC-urilor **cât încălzesc** – azi, luna aceasta, anul acesta – și le adună cu gazul pentru costul total al încălzirii. |
+| 🔔 **Notificări** (opțional) | Pe telefon, pe Telegram sau la orice serviciu de notificare: o fereastră lăsată deschisă, un termostat, cap sau AC care nu mai răspunde și un raport săptămânal duminică seara cu gazul, curentul și costul săptămânii. |
 | 👀 **Mod doar observă** | Oprești *Control HeatWise* și îți arată ce ar face, fără să atingă vreun aparat. Ideal ca să-l încerci lângă ce ai acum. |
 | 🧠 **Se explică** | Senzorul *Decizie* și panoul spun pe înțelesul tuturor de ce casa are temperatura pe care o are. |
 | 🖥️ **Panou în bara laterală** | Casa și fiecare cameră, preseturi și temperaturi, sursa de căldură, cât a mers arzătorul, cât costă căldura din gaz și din AC și ultimele 24 de ore. |
 | 🔧 **Îți cunoaște aparatele** (opțional) | Îi spui centrala și clima din fișa tehnică sau de pe eticheta energetică – câteva cifre, fără o bază de date de modele care să se învechească – și comparația de cost și estimarea gazului folosesc randamentele tale reale. Ce lași gol primește media pentru tipul de aparat. |
-| 🌍 **Română și engleză** | Urmează automat limba din Home Assistant. |
+| 🌍 **Română și engleză** | Urmează limba din Home Assistant sau alegi una doar pentru HeatWise. |
 
 ### Capturi
 
@@ -108,6 +111,13 @@ dezactivează automatizările vechi de încălzire și pornește **Control HeatW
 | Oprește încălzirea peste | — | Temperatura de afară peste care se oprește încălzirea (histerezis 1 °C). |
 | Plecat după | 10 min | Cât timp după plecarea ultimei persoane casa e considerată goală. |
 | Păstrează modificările manuale | 120 min | Sau până la următorul pas din program. |
+| Limba | Automat | Limba panoului, a textelor de decizie și a notificărilor; automat urmează Home Assistant. |
+| Pornește din timp înainte de program | pornit | Pornește confortul înaintea programului după viteza de încălzire măsurată de HeatWise (1,5 °C/h până măsoară una). Are nevoie de un ajutor Program (Schedule). |
+| Pornește cu cel mult atâtea minute înainte | 180 min | Limita de sus pentru pornirea din timp. |
+| Distanța până acasă | — | Senzorii de distanță Proximity, câte unul pe persoană; dacă există, se folosește și senzorul de direcție din aceeași intrare. |
+| Încălzește când e mai aproape de | 15 km | Cineva care vine spre casă (cu cel puțin 1 km mai aproape decât cel mai departe punct) în această distanță readuce casa la confort, cel mult 45 de minute. |
+| Trimite la | — | Serviciile de notificare pentru mesaje, de exemplu `notify.mobile_app_telefon`. |
+| Fereastră deschisă / dispozitiv care nu răspunde / raport săptămânal | pornit / pornit / pornit | Ce mesaje să trimită. Raportul pleacă duminica la 19:00. |
 | Sursa de căldură | Automat | Automat, doar centrala sau doar AC. |
 | Folosește AC-ul peste | 8 °C | Pragul de temperatură exterioară când prețurile nu sunt cunoscute. |
 | Nu folosi niciodată AC-ul sub | −15 °C | Sub această temperatură încălzește mereu centrala. |
@@ -128,7 +138,7 @@ dezactivează automatizările vechi de încălzire și pornește **Control HeatW
 |---|---|
 | `climate.heatwise_<casa>` | Termostatul casei. Preseturi: program, confort, eco, plecat, boost (1 h). O temperatură setată e o modificare manuală. Oprit = protecție la îngheț. |
 | `climate.heatwise_<camera>` | Câte unul pe cameră, aceleași comenzi. |
-| `sensor.…_decision` | De ce face HeatWise ce face. |
+| `sensor.…_decision` | De ce face HeatWise ce face. Atributele arată și camerele care se încălzesc din timp, dacă vine cineva spre casă și viteza de încălzire învățată pe fiecare cameră. |
 | `sensor.…_main_thermostat_target` | Ce cere HeatWise de la termostatul principal. |
 | `sensor.…_heat_source` | `boiler` (centrala) sau `ac`, cu COP-ul estimat și costul unui kWh de căldură din fiecare (doar cu AC). |
 | `sensor.…_burner_runtime_today` / `binary_sensor.…_burner_running` | Doar cu priză pe centrală. |

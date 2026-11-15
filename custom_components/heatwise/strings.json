@@ -15,13 +15,15 @@
           "comfort_temp": "Comfort temperature",
           "eco_temp": "Eco temperature",
           "away_temp": "Away temperature",
-          "frost_temp": "Frost protection"
+          "frost_temp": "Frost protection",
+          "language": "Language of HeatWise texts"
         },
         "data_description": {
           "boiler_entity": "Optional. Leave empty for a house heated only by air conditioners.",
           "house_temp_sensor": "Optional. Without it the thermostat's own reading is used.",
           "persons": "Optional. Without people HeatWise assumes someone is home.",
-          "schedule_entity": "Optional. A Schedule helper works best. Without it: comfort while someone is home."
+          "schedule_entity": "Optional. A Schedule helper works best. Without it: comfort while someone is home.",
+          "language": "Automatic follows Home Assistant. The panel and the decision texts use this language."
         }
       },
       "equipment": {
@@ -58,6 +60,8 @@
           "equipment": "Boiler and air conditioner",
           "hybrid": "Air conditioner and prices",
           "power": "Boiler power plug",
+          "smart": "Smart start (preheat, coming home)",
+          "notify": "Notifications",
           "add_zone": "Add a zone",
           "edit_zone": "Edit a zone",
           "remove_zone": "Remove a zone"
@@ -78,13 +82,15 @@
           "frost_temp": "Frost protection",
           "warm_off_threshold": "Stop heating above this outdoor temperature",
           "away_delay": "Away after (minutes)",
-          "override_minutes": "Keep manual changes for (minutes)"
+          "override_minutes": "Keep manual changes for (minutes)",
+          "language": "Language of HeatWise texts"
         },
         "data_description": {
           "boiler_entity": "Optional. Leave empty for a house heated only by air conditioners.",
           "house_temp_sensor": "Optional. Without it the thermostat's own reading is used.",
           "persons": "Optional. Without people HeatWise assumes someone is home.",
-          "schedule_entity": "Optional. A Schedule helper works best. Without it: comfort while someone is home."
+          "schedule_entity": "Optional. A Schedule helper works best. Without it: comfort while someone is home.",
+          "language": "Automatic follows Home Assistant. The panel and the decision texts use this language."
         }
       },
       "hybrid": {
@@ -190,6 +196,30 @@
           "ac_input_w": "Rated power consumption when heating, e.g. 916 W.",
           "ac_energy_class": "Used only if the two numbers above are empty."
         }
+      },
+      "smart": {
+        "title": "Smart start",
+        "description": "HeatWise learns how fast every room warms up and starts heating early, so it is warm when the schedule turns to comfort. With distance sensors from the Proximity integration it also warms the house up when someone is on the way home.",
+        "data": {
+          "preheat": "Start early before the schedule",
+          "preheat_max_minutes": "Start at most this early (minutes)",
+          "arrival_sensors": "Distance to home (Proximity sensors)",
+          "arrival_km": "Warm up when someone heading home is closer than (km)"
+        },
+        "data_description": {
+          "preheat": "Needs a Schedule helper. Until HeatWise has measured a warm-up it assumes 1.5 °C per hour.",
+          "arrival_sensors": "One per person, e.g. sensor.home_alex_distance. The direction-of-travel sensor of the same Proximity entry is used when present."
+        }
+      },
+      "notify": {
+        "title": "Notifications",
+        "description": "Messages go to the notify services you pick (the mobile app, Telegram, persistent notification…).",
+        "data": {
+          "notify_targets": "Send to",
+          "notify_window": "Window opened",
+          "notify_offline": "Thermostat, valve or AC stops responding (15 min)",
+          "weekly_report": "Weekly report on Sunday at 19:00 (gas, electricity, cost)"
+        }
       }
     },
     "error": {
@@ -219,6 +249,13 @@
         "a": "A",
         "b": "B",
         "unknown": "I don't know"
+      }
+    },
+    "language": {
+      "options": {
+        "auto": "Automatic (Home Assistant)",
+        "en": "English",
+        "ro": "Română"
       }
     }
   },

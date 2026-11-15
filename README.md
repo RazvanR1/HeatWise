@@ -1,7 +1,7 @@
 # 🌡️ HeatWise – smart hybrid heating for Home Assistant
 
 [![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
-![Version](https://img.shields.io/badge/version-0.5.1-blue)
+![Version](https://img.shields.io/badge/version-0.6.0-blue)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 ![Local only](https://img.shields.io/badge/cloud-none-success)
 [![Tests](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml/badge.svg)](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml)
@@ -28,16 +28,19 @@ AC that Home Assistant can see, and everything runs locally.
 | 🔥 **Keeps the boiler out of the way** | While the ACs heat, the main thermostat drops to the away level, so gas and electricity never heat the house at the same time. Rooms with radiator valves can call the boiler when they need heat, or simply copy the main thermostat. |
 | 🏠 **Knows who is home** | Comfort while someone is home, away level when the house is empty. The away delay starts only when someone actually leaves. |
 | 📅 **Follows your schedule** | Any Schedule helper (or input boolean): on = comfort, off = eco. Rooms can have their own schedule or follow the house. |
+| ⏰ **Warm on time** | Learns how fast every room warms up and starts heating early, so the room is already warm when the schedule turns to comfort – not an hour later. |
+| 🚗 **Warms up when you head home** | With the distance sensors of Home Assistant's Proximity integration it raises the house from away to comfort while someone is driving home. |
 | ✋ **Respects manual changes** | Turn a thermostat by hand and the change is kept for the time you choose, or until the next schedule step. |
 | 🪟 **Windows and warm days** | An open window lowers that room to frost protection; above an outdoor temperature you choose, heating stops. |
 | ⚡ **Boiler power plug** (optional) | A smart plug on the boiler shows when the burner runs and for how long today. |
 | ⛽ **Gas use and cost** | From the burner time HeatWise estimates the gas used today, this month and this year (m³, kWh, money) and in total, ready for the **Energy** dashboard. Point it at your gas meter index (e.g. your supplier's integration) and it learns the real m³ per burner hour from every reading. |
 | 🔌 **AC electricity and total cost** | With a power sensor on each AC (a smart plug), it counts the energy and cost the ACs use **while heating** – today, this month, this year – and adds it to the gas for the total cost of heating. |
+| 🔔 **Notifications** (optional) | To your phone, Telegram or any notify service: a window left open, a thermostat, valve or AC that stopped responding, and a weekly report on Sunday evening with the gas, electricity and cost of the week. |
 | 👀 **Observe-only mode** | Turn off *HeatWise control* and it shows what it would do without touching any device. Ideal for trying it next to your current setup. |
 | 🧠 **Explains itself** | A *Decision* sensor and the panel say in plain words why the house is at the temperature it is. |
 | 🖥️ **Sidebar panel** | The house and every room, presets and temperatures, the heat source, burner time, the cost of heat from gas and from the AC, and the last 24 hours. |
 | 🔧 **Knows your devices** (optional) | Tell it the boiler and the AC from their datasheet or energy label – a few numbers, no model database to go out of date – and the cost comparison and gas estimate use your real efficiencies. Anything you leave empty gets an average for that kind of device. |
-| 🌍 **English and Romanian** | Follows your Home Assistant language automatically. |
+| 🌍 **English and Romanian** | Follows your Home Assistant language, or pick one for HeatWise only. |
 
 ### Screenshots
 
@@ -107,6 +110,13 @@ two, then disable your old heating automations and turn **HeatWise control** on.
 | Stop heating above | — | Outdoor temperature above which heating stops (1 °C hysteresis). |
 | Away after | 10 min | How long after the last person leaves the house counts as empty. |
 | Keep manual changes for | 120 min | Or until the next schedule step. |
+| Language | Automatic | Language of the panel, the decision texts and the notifications; automatic follows Home Assistant. |
+| Start early before the schedule | on | Starts comfort ahead of the schedule using the warm-up speed HeatWise measured (1.5 °C/h until it has measured one). Needs a Schedule helper. |
+| Start at most this early | 180 min | Upper limit for the early start. |
+| Distance to home | — | Proximity distance sensors, one per person; the direction-of-travel sensor of the same entry is used when present. |
+| Warm up when closer than | 15 km | Someone heading home (at least 1 km closer than their farthest point) within this distance brings the house back to comfort, for up to 45 minutes. |
+| Send to | — | Notify services for the messages, e.g. `notify.mobile_app_phone`. |
+| Window opened / device stops responding / weekly report | on / on / on | Which messages to send. The report goes out on Sunday at 19:00. |
 | Heat source | Automatic | Automatic, boiler only or AC only. |
 | Use the AC above | 8 °C | Outdoor threshold used when prices are not known. |
 | Never use the AC below | −15 °C | Below this the boiler always heats. |
@@ -127,7 +137,7 @@ two, then disable your old heating automations and turn **HeatWise control** on.
 |---|---|
 | `climate.heatwise_<house>` | The house thermostat. Presets: schedule, comfort, eco, away, boost (1 h). Setting a temperature is a manual change. Off = frost protection. |
 | `climate.heatwise_<room>` | One per room, same controls. |
-| `sensor.…_decision` | Why HeatWise does what it does. |
+| `sensor.…_decision` | Why HeatWise does what it does. Attributes also show the rooms warming up early, whether someone is on the way home and the warm-up speed learned per room. |
 | `sensor.…_main_thermostat_target` | What HeatWise asks from the main thermostat. |
 | `sensor.…_heat_source` | `boiler` or `ac`, with the estimated COP and the cost of 1 kWh of heat from each (only with an AC). |
 | `sensor.…_burner_runtime_today` / `binary_sensor.…_burner_running` | Only with a boiler power plug. |
@@ -186,11 +196,13 @@ HeatWise is free and open source, built in my spare time. If it helps your home,
 
 ## 🇷🇴 Pe scurt, în română
 
-**HeatWise – încălzire inteligentă și hibridă pentru Home Assistant.** HeatWise e o integrare pentru Home Assistant care rulează complet local și face patru lucruri:
+**HeatWise – încălzire inteligentă și hibridă pentru Home Assistant.** HeatWise e o integrare pentru Home Assistant care rulează complet local și face câteva lucruri:
 
 - **Alege cu ce încălzește.** Compară prețul gazului cu cel al curentului, ținând cont de eficiența aerului condiționat la temperatura de afară, sau folosește un prag de temperatură. În zilele blânde încălzește cu AC-urile, iar centrala stă.
 - **Conduce totul ca un singur sistem:** centrala, capetele termostatice și AC-urile, după senzorii din camere, programul tău și cine e acasă. Respectă modificările făcute de mână.
 - **Arată cât gaz consumă centrala și cât costă**, estimat din timpul de funcționare al arzătorului și corectat singur după indexul contorului.
+- **E cald la timp:** învață cât de repede se încălzește casa, pornește din timp înainte de program și încălzește când vii spre casă.
+- **Te anunță** de ferestre lăsate deschise, de aparate care nu mai răspund și îți trimite un raport săptămânal cu consumul și costul.
 - **Se explică.** Panoul din bara laterală și senzorul *Decizie* spun pe înțelesul tuturor de ce casa are temperatura pe care o are.
 - **Poate doar să observe**, ca să-l încerci lângă ce ai acum fără să atingă vreun aparat.
 
@@ -198,7 +210,7 @@ HeatWise is free and open source, built in my spare time. If it helps your home,
 `https://github.com/RazvanR1/HeatWise`, tip **Integration**), instalezi **HeatWise**, repornești
 Home Assistant și îl adaugi din **Setări → Dispozitive și servicii → Adaugă integrare → HeatWise**.
 Camerele, prețurile și priza centralei le adaugi din butonul **Configurează** al integrării.
-HeatWise vorbește română automat dacă Home Assistant e în română.
+HeatWise vorbește română automat dacă Home Assistant e în română, sau alegi limba din opțiunile lui.
 Documentația completă în română: [README.ro.md](README.ro.md).
 
 Dacă HeatWise îți e de folos, mă poți susține cu o cafea: [buymeacoffee.com/razvanr1](https://buymeacoffee.com/razvanr1) ☕

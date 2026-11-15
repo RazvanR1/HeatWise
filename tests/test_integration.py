@@ -176,7 +176,7 @@ async def test_every_options_page_opens(hass: HomeAssistant) -> None:
             "zones": [{"zone_id": "k1", "zone_name": "Kitchen", "trvs": [TRV], "trv_follow_boiler": False}],
         },
     )
-    for step in ("house", "equipment", "hybrid", "power", "add_zone", "edit_zone", "remove_zone"):
+    for step in ("house", "equipment", "hybrid", "power", "smart", "notify", "add_zone", "edit_zone", "remove_zone"):
         result = await hass.config_entries.options.async_init(entry.entry_id)
         result = await hass.config_entries.options.async_configure(result["flow_id"], {"next_step_id": step})
         assert result["type"] is FlowResultType.FORM, step
@@ -346,3 +346,98 @@ async def test_migrates_gas_from_older_versions(hass: HomeAssistant, freezer, ha
     assert c.period_value("gas_m3", "today") == 4.0
     assert c.period_value("gas_m3", "month") == 7.0
     assert abs(c.period_value("gas_cost", "year") - 17.5) < 0.01
+
+
+BASE = {"comfort_temp": 21, "eco_temp": 18, "away_temp": 16, "frost_temp": 7}
+
+
+async def test_preheat_before_the_schedule(hass: HomeAssistant) -> None:
+    _thermostat(hass, BOILER, 18, 19.5)
+    soon = dt_util.utcnow() + timedelta(minutes=40)
+    later = dt_util.utcnow() + timedelta(minutes=120)
+    hass.states.async_set("schedule.heat", "off", {"next_event": later})
+    entry = await _setup(hass, {**BASE, "boiler_entity": BOILER, "schedule_entity": "schedule.heat"})
+    async_mock_service(hass, "climate", "set_temperature")
+    await _tick(hass)
+    assert entry.runtime_data.plan.house_reason == "schedule_eco"
+    # 1.5 °C to gain at 1.5 °C/h: one hour ahead
+    hass.states.async_set("schedule.heat", "off", {"next_event": soon})
+    await hass.async_block_till_done()
+    await _tick(hass)
+    assert entry.runtime_data.plan.house_reason == "preheat"
+    assert entry.runtime_data.plan.boiler_target == 21
+
+
+async def test_learns_how_fast_the_house_warms_up(hass: HomeAssistant, freezer) -> None:
+    _thermostat(hass, BOILER, 21, 19.5)
+    entry = await _setup(hass, {**BASE, "boiler_entity": BOILER})
+    controller = entry.runtime_data
+    controller.set_control(False)
+    await _tick(hass)
+    assert "house" in controller._heat_sessions
+    freezer.tick(timedelta(hours=1))
+    _thermostat(hass, BOILER, 21, 21.0)
+    await hass.async_block_till_done()
+    await _tick(hass, 60)
+    assert controller.heat_rates["house"] == 1.5
+    assert controller.heat_rate("kitchen") == 1.5
+
+
+async def test_warms_up_when_someone_heads_home(hass: HomeAssistant) -> None:
+    hass.states.async_set("person.a", "not_home")
+    dist = "sensor.home_a_distance"
+    direction = "sensor.home_a_direction_of_travel"
+    hass.states.async_set(dist, "12000", {"unit_of_measurement": "m", "device_class": "distance"})
+    hass.states.async_set(direction, "stationary")
+    entry = await _setup(
+        hass, {**BASE, "persons": ["person.a"], "arrival_sensors": [dist], "arrival_km": 15}
+    )
+    await _tick(hass)
+    assert entry.runtime_data.plan.house_reason == "away"
+    hass.states.async_set(dist, "9500", {"unit_of_measurement": "m", "device_class": "distance"})
+    hass.states.async_set(direction, "towards")
+    await hass.async_block_till_done()
+    await _tick(hass)
+    assert entry.runtime_data.plan.house_reason == "arriving"
+    assert hass.states.get("sensor.heatwise_home_decision").attributes["on_the_way_home"] is True
+
+
+async def test_notifications_and_language(hass: HomeAssistant, freezer) -> None:
+    hass.states.async_set("binary_sensor.window", "off")
+    _thermostat(hass, BOILER, 21, 20.5)
+    entry = await _setup(
+        hass,
+        {
+            **BASE,
+            "boiler_entity": BOILER,
+            "window_sensors": ["binary_sensor.window"],
+            "notify_targets": ["notify.phone"],
+            "language": "ro",
+        },
+    )
+    sent = async_mock_service(hass, "notify", "phone")
+    async_mock_service(hass, "climate", "set_temperature")
+    controller = entry.runtime_data
+    assert controller.language == "ro"
+    assert "Program" not in (controller.explanation() or "")
+    await _tick(hass)
+    hass.states.async_set("binary_sensor.window", "on")
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(seconds=70))
+    await _tick(hass, 70)
+    assert any("Fereastră deschisă în Home" in c.data["message"] for c in sent)
+
+    # device offline for 15 minutes, then back
+    hass.states.async_set(BOILER, "unavailable")
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(minutes=16))
+    await _tick(hass, 60)
+    assert any("nu mai răspunde" in c.data["message"] for c in sent)
+    _thermostat(hass, BOILER, 21, 20.5)
+    await hass.async_block_till_done()
+    await _tick(hass, 60)
+    assert any("răspunde din nou" in c.data["message"] for c in sent)
+
+    await controller.async_send_weekly_report()
+    await hass.async_block_till_done()
+    assert sent[-1].data["title"] == "HeatWise: săptămâna aceasta"

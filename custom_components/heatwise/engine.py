@@ -66,6 +66,7 @@ class ZoneState:
     enabled: bool = True
     ac_ours_running: bool = False
     ac_user_controlled: bool = False
+    preheat: bool = False
 
 
 @dataclass
@@ -95,6 +96,7 @@ class HouseState:
     warm_off_threshold: float | None = None
     previous_source: str = SOURCE_BOILER
     previous_warm_off: bool = False
+    arriving: bool = False
 
 
 @dataclass
@@ -198,14 +200,19 @@ def zone_target(
         return t.away, "preset_away"
     if preset == PRESET_BOOST:
         return t.comfort + BOOST_DELTA, "preset_boost"
-    if house.anyone_home is False:
+    arriving = house.anyone_home is False and house.arriving
+    if house.anyone_home is False and not arriving:
         return t.away, "away"
     schedule_on = state.schedule_on if state.schedule_on is not None else house_schedule_on
     if schedule_on is None:
-        return t.comfort, "home"
-    if schedule_on:
-        return t.comfort, "schedule_comfort"
-    return t.eco, "schedule_eco"
+        target, reason = t.comfort, "home"
+    elif schedule_on:
+        target, reason = t.comfort, "schedule_comfort"
+    elif state.preheat:
+        target, reason = t.comfort, "preheat"
+    else:
+        target, reason = t.eco, "schedule_eco"
+    return target, ("arriving" if arriving else reason)
 
 
 def _ac_action(
@@ -317,6 +324,8 @@ REASONS: dict[str, dict[str, str]] = {
         "home": "Someone is home",
         "schedule_comfort": "Schedule: comfort",
         "schedule_eco": "Schedule: eco",
+        "preheat": "Warming up before the schedule",
+        "arriving": "Someone is on the way home",
         "no_ac": "No air conditioner configured",
         "forced_boiler": "Boiler only (set by you)",
         "forced_ac": "Air conditioner only (set by you)",
@@ -340,6 +349,8 @@ REASONS: dict[str, dict[str, str]] = {
         "home": "E cineva acasă",
         "schedule_comfort": "Program: confort",
         "schedule_eco": "Program: eco",
+        "preheat": "Încălzește din timp pentru program",
+        "arriving": "Cineva vine spre casă",
         "no_ac": "Niciun aer condiționat configurat",
         "forced_boiler": "Doar centrala (setat de tine)",
         "forced_ac": "Doar aerul condiționat (setat de tine)",

@@ -15,13 +15,15 @@
           "comfort_temp": "Temperatura confort",
           "eco_temp": "Temperatura eco",
           "away_temp": "Temperatura plecat",
-          "frost_temp": "Protecție la îngheț"
+          "frost_temp": "Protecție la îngheț",
+          "language": "Limba textelor HeatWise"
         },
         "data_description": {
           "boiler_entity": "Opțional. Lasă gol pentru o casă încălzită doar cu aer condiționat.",
           "house_temp_sensor": "Opțional. Fără el se folosește temperatura citită de termostat.",
           "persons": "Opțional. Fără persoane, HeatWise consideră că e cineva acasă.",
-          "schedule_entity": "Opțional. Merge cel mai bine un ajutor Program (Schedule). Fără el: confort cât e cineva acasă."
+          "schedule_entity": "Opțional. Merge cel mai bine un ajutor Program (Schedule). Fără el: confort cât e cineva acasă.",
+          "language": "Automat urmează limba Home Assistant. Panoul și textele de decizie folosesc limba aleasă."
         }
       },
       "equipment": {
@@ -58,6 +60,8 @@
           "equipment": "Centrala și aerul condiționat",
           "hybrid": "Aer condiționat și prețuri",
           "power": "Priza centralei",
+          "smart": "Pornire inteligentă (din timp, la venirea acasă)",
+          "notify": "Notificări",
           "add_zone": "Adaugă o zonă",
           "edit_zone": "Modifică o zonă",
           "remove_zone": "Șterge o zonă"
@@ -78,13 +82,15 @@
           "frost_temp": "Protecție la îngheț",
           "warm_off_threshold": "Oprește încălzirea peste această temperatură afară",
           "away_delay": "Plecat după (minute)",
-          "override_minutes": "Păstrează modificările manuale (minute)"
+          "override_minutes": "Păstrează modificările manuale (minute)",
+          "language": "Limba textelor HeatWise"
         },
         "data_description": {
           "boiler_entity": "Opțional. Lasă gol pentru o casă încălzită doar cu aer condiționat.",
           "house_temp_sensor": "Opțional. Fără el se folosește temperatura citită de termostat.",
           "persons": "Opțional. Fără persoane, HeatWise consideră că e cineva acasă.",
-          "schedule_entity": "Opțional. Merge cel mai bine un ajutor Program (Schedule). Fără el: confort cât e cineva acasă."
+          "schedule_entity": "Opțional. Merge cel mai bine un ajutor Program (Schedule). Fără el: confort cât e cineva acasă.",
+          "language": "Automat urmează limba Home Assistant. Panoul și textele de decizie folosesc limba aleasă."
         }
       },
       "hybrid": {
@@ -190,6 +196,30 @@
           "ac_input_w": "Puterea nominală consumată la încălzire, de exemplu 916 W.",
           "ac_energy_class": "Se folosește doar dacă cele două cifre de mai sus sunt goale."
         }
+      },
+      "smart": {
+        "title": "Pornire inteligentă",
+        "description": "HeatWise învață cât de repede se încălzește fiecare cameră și pornește încălzirea din timp, ca să fie cald când programul trece pe confort. Cu senzorii de distanță din integrarea Proximity încălzește casa și când cineva vine spre casă.",
+        "data": {
+          "preheat": "Pornește din timp înainte de program",
+          "preheat_max_minutes": "Pornește cu cel mult atâtea minute înainte",
+          "arrival_sensors": "Distanța până acasă (senzori Proximity)",
+          "arrival_km": "Încălzește când cine vine spre casă e mai aproape de (km)"
+        },
+        "data_description": {
+          "preheat": "Are nevoie de un helper Program (Schedule). Până măsoară o încălzire, HeatWise presupune 1,5 °C pe oră.",
+          "arrival_sensors": "Câte unul pentru fiecare persoană, de ex. sensor.home_alex_distance. Dacă există, se folosește și senzorul de direcție din aceeași intrare Proximity."
+        }
+      },
+      "notify": {
+        "title": "Notificări",
+        "description": "Mesajele merg la serviciile de notificare alese (aplicația de pe telefon, Telegram, notificare persistentă…).",
+        "data": {
+          "notify_targets": "Trimite la",
+          "notify_window": "Fereastră deschisă",
+          "notify_offline": "Termostat, cap sau AC care nu mai răspunde (15 min)",
+          "weekly_report": "Raport săptămânal duminica la 19:00 (gaz, curent, cost)"
+        }
       }
     },
     "error": {
@@ -219,6 +249,13 @@
         "a": "A",
         "b": "B",
         "unknown": "Nu știu"
+      }
+    },
+    "language": {
+      "options": {
+        "auto": "Automat (Home Assistant)",
+        "en": "English",
+        "ro": "Română"
       }
     }
   },

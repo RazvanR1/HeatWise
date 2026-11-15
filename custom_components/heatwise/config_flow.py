@@ -24,6 +24,8 @@ from .const import (
     CONF_AC_MODEL,
     CONF_AC_OFFSET,
     CONF_AC_THRESHOLD,
+    CONF_ARRIVAL_KM,
+    CONF_ARRIVAL_SENSORS,
     CONF_AWAY,
     CONF_AWAY_DELAY,
     CONF_BOILER,
@@ -45,12 +47,19 @@ from .const import (
     CONF_GAS_RATE,
     CONF_HOUSE_SENSOR,
     CONF_HYBRID_MODE,
+    CONF_LANGUAGE,
     CONF_NAME,
+    CONF_NOTIFY,
+    CONF_NOTIFY_OFFLINE,
+    CONF_NOTIFY_WINDOW,
     CONF_OUTDOOR,
     CONF_OVERRIDE_MINUTES,
     CONF_PERSONS,
+    CONF_PREHEAT,
+    CONF_PREHEAT_MAX,
     CONF_SCHEDULE,
     CONF_WARM_OFF,
+    CONF_WEEKLY_REPORT,
     CONF_WINDOWS,
     CONF_ZONE_AC_POWER,
     CONF_ZONE_ACS,
@@ -63,6 +72,7 @@ from .const import (
     DEFAULT_AC_MIN_OUTDOOR,
     DEFAULT_AC_OFFSET,
     DEFAULT_AC_THRESHOLD,
+    DEFAULT_ARRIVAL_KM,
     DEFAULT_AWAY,
     DEFAULT_AWAY_DELAY,
     DEFAULT_BURNER_THRESHOLD,
@@ -71,7 +81,10 @@ from .const import (
     DEFAULT_FROST,
     DEFAULT_GAS_KWH_PER_M3,
     DEFAULT_OVERRIDE_MINUTES,
+    DEFAULT_PREHEAT_MAX,
     DOMAIN,
+    LANG_AUTO,
+    LANGUAGES,
 )
 from .controller import effective_config
 from .equipment import (
@@ -109,6 +122,9 @@ SENSOR = selector.EntitySelector(selector.EntitySelectorConfig(domain=["sensor",
 POWER = selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor", device_class="power"))
 POWER_MULTI = selector.EntitySelector(
     selector.EntitySelectorConfig(domain="sensor", device_class="power", multiple=True)
+)
+DISTANCES = selector.EntitySelector(
+    selector.EntitySelectorConfig(domain="sensor", device_class="distance", multiple=True)
 )
 GAS_METER = selector.EntitySelector(selector.EntitySelectorConfig(domain=["sensor", "input_number"]))
 
@@ -152,6 +168,9 @@ def house_schema(values: dict[str, Any], with_name: bool) -> vol.Schema:
                 _req(CONF_OVERRIDE_MINUTES, values, DEFAULT_OVERRIDE_MINUTES): _number(10, 1440, 5),
             }
         )
+    fields[_req(CONF_LANGUAGE, values, LANG_AUTO)] = selector.SelectSelector(
+        selector.SelectSelectorConfig(options=list(LANGUAGES), translation_key="language")
+    )
     return vol.Schema(fields)
 
 
@@ -212,6 +231,34 @@ def equipment_schema(values: dict[str, Any]) -> vol.Schema:
     )
 
 
+def smart_schema(values: dict[str, Any]) -> vol.Schema:
+    return vol.Schema(
+        {
+            vol.Required(CONF_PREHEAT, default=values.get(CONF_PREHEAT, True)): selector.BooleanSelector(),
+            _req(CONF_PREHEAT_MAX, values, DEFAULT_PREHEAT_MAX): _number(15, 360, 5),
+            _opt(CONF_ARRIVAL_SENSORS, values): DISTANCES,
+            _req(CONF_ARRIVAL_KM, values, DEFAULT_ARRIVAL_KM): _number(1, 200, 0.5),
+        }
+    )
+
+
+def notify_schema(values: dict[str, Any], services: list[str]) -> vol.Schema:
+    options = sorted(set(services) | set(values.get(CONF_NOTIFY, [])))
+    return vol.Schema(
+        {
+            _opt(CONF_NOTIFY, values): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=options, multiple=True, custom_value=True,
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            ),
+            vol.Required(CONF_NOTIFY_WINDOW, default=values.get(CONF_NOTIFY_WINDOW, True)): selector.BooleanSelector(),
+            vol.Required(CONF_NOTIFY_OFFLINE, default=values.get(CONF_NOTIFY_OFFLINE, True)): selector.BooleanSelector(),
+            vol.Required(CONF_WEEKLY_REPORT, default=values.get(CONF_WEEKLY_REPORT, True)): selector.BooleanSelector(),
+        }
+    )
+
+
 def zone_schema(values: dict[str, Any]) -> vol.Schema:
     return vol.Schema(
         {
@@ -237,7 +284,7 @@ def _merge(current: dict[str, Any], schema: vol.Schema, user_input: dict[str, An
     result = dict(current)
     for marker in schema.schema:
         key = str(marker)
-        if key in user_input and user_input[key] not in (None, "", []):
+        if key in user_input and (user_input[key] is False or user_input[key] not in (None, "", [])):
             result[key] = user_input[key]
         else:
             result.pop(key, None)
@@ -289,7 +336,7 @@ class HeatWiseOptionsFlow(OptionsFlow):
         return self.async_create_entry(data=values)
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        menu = ["house", "equipment", "hybrid", "power", "add_zone"]
+        menu = ["house", "equipment", "hybrid", "power", "smart", "notify", "add_zone"]
         if self._values.get(CONF_ZONES):
             menu += ["edit_zone", "remove_zone"]
         return self.async_show_menu(step_id="init", menu_options=menu)
@@ -317,6 +364,19 @@ class HeatWiseOptionsFlow(OptionsFlow):
         if user_input is not None:
             return self._save(_merge(self._values, schema, user_input))
         return self.async_show_form(step_id="power", data_schema=schema)
+
+    async def async_step_smart(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        schema = smart_schema(self._values)
+        if user_input is not None:
+            return self._save(_merge(self._values, schema, user_input))
+        return self.async_show_form(step_id="smart", data_schema=schema)
+
+    async def async_step_notify(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        services = [f"notify.{name}" for name in self.hass.services.async_services().get("notify", {})]
+        schema = notify_schema(self._values, services)
+        if user_input is not None:
+            return self._save(_merge(self._values, schema, user_input))
+        return self.async_show_form(step_id="notify", data_schema=schema)
 
     def _zones(self) -> list[dict[str, Any]]:
         return [dict(z) for z in self._values.get(CONF_ZONES, [])]

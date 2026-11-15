@@ -18,6 +18,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: HeatWiseConfigEntry) -> 
     controller = HeatWiseController(hass, entry)
     entry.runtime_data = controller
     _remove_stale_zone_devices(hass, entry, controller)
+    dr.async_get(hass).async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, f"{entry.entry_id}_{HOUSE_ZONE_ID}")},
+        name=f"HeatWise {controller.name}",
+        manufacturer="HeatWise",
+        model="House",
+    )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     await controller.async_setup()
     await async_setup_panel(hass)

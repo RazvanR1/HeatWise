@@ -22,6 +22,21 @@ CONF_AWAY = "away_temp"
 CONF_FROST = "frost_temp"
 CONF_WARM_OFF = "warm_off_threshold"
 CONF_OVERRIDE_MINUTES = "override_minutes"
+CONF_LANGUAGE = "language"
+LANG_AUTO = "auto"
+LANGUAGES = (LANG_AUTO, "en", "ro")
+
+# Smart start: preheat before the schedule, warm up when someone heads home
+CONF_PREHEAT = "preheat"
+CONF_PREHEAT_MAX = "preheat_max_minutes"
+CONF_ARRIVAL_SENSORS = "arrival_sensors"
+CONF_ARRIVAL_KM = "arrival_km"
+
+# Notifications
+CONF_NOTIFY = "notify_targets"
+CONF_NOTIFY_WINDOW = "notify_window"
+CONF_NOTIFY_OFFLINE = "notify_offline"
+CONF_WEEKLY_REPORT = "weekly_report"
 
 # Hybrid / prices
 CONF_HYBRID_MODE = "hybrid_mode"
@@ -64,6 +79,7 @@ CONF_ZONE_AC_POWER = "ac_power_sensors"
 
 # Consumption periods
 PERIODS = ("today", "month", "year")
+STORED_PERIODS = ("today", "week", "month", "year")
 AC_POWER_MAX_GAP_SECONDS = 900
 
 DEFAULT_COMFORT = 21.0
@@ -83,6 +99,18 @@ DEFAULT_GAS_KWH_PER_M3 = 10.5
 GAS_RATE_MIN = 0.2
 GAS_RATE_MAX = 6.0
 GAS_CALIBRATION_MIN_HOURS = 3.0
+
+DEFAULT_PREHEAT_MAX = 180
+DEFAULT_ARRIVAL_KM = 15.0
+DEFAULT_HEAT_RATE = 1.5  # °C per hour until HeatWise learns the house
+HEAT_RATE_MIN = 0.2
+HEAT_RATE_MAX = 6.0
+HEAT_SESSION_MAX_HOURS = 6.0
+ARRIVAL_MIN_PROGRESS_KM = 1.0
+ARRIVAL_LATCH_MINUTES = 45
+OFFLINE_MINUTES = 15
+REPORT_WEEKDAY = 6  # Sunday
+REPORT_HOUR = 19
 
 EVAL_INTERVAL_SECONDS = 60
 DEBOUNCE_SECONDS = 2

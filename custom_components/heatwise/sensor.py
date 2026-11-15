@@ -72,6 +72,13 @@ class DecisionSensor(HeatWiseEntity, SensorEntity):
             "warm_outside": plan.warm_off,
             "anyone_home": self.controller.anyone_home,
             "observing_only": not self.controller.control_enabled,
+            "on_the_way_home": self.controller.arrival.until is not None,
+            "preheating": [
+                self.controller.zone_name(zid) for zid, on in self.controller.preheating.items() if on
+            ],
+            "heat_up_rate": {
+                self.controller.zone_name(zid): rate for zid, rate in self.controller.heat_rates.items()
+            },
             "zones": {
                 self.controller.zone_name(zid): engine.explain(zp.reason, self.controller.language)
                 for zid, zp in plan.zones.items()

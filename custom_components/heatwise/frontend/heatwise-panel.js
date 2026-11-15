@@ -151,7 +151,7 @@ class HeatWisePanel extends HTMLElement {
   }
 
   get _t() {
-    const lang = (this._hass?.language || "en").slice(0, 2);
+    const lang = (this._house?.language || this._hass?.language || "en").slice(0, 2);
     return STR[lang] || STR.en;
   }
 
