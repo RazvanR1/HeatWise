@@ -161,6 +161,7 @@ class HeatWiseController:
         self.heat_rates: dict[str, float] = {}
         self._heat_sessions: dict[str, tuple[datetime, float, float]] = {}
         self.arrival = ArrivalWatcher()
+        self.house_device_id: str | None = None
         self.preheating: dict[str, bool] = {}
         self._windows_seen: dict[str, bool] = {}
         self._offline_notified: set[str] = set()
