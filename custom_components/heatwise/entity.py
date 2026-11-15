@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from homeassistant.core import callback
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import Entity
@@ -30,13 +31,21 @@ class HeatWiseEntity(Entity):
                 model="House",
             )
         else:
-            self._attr_device_info = DeviceInfo(
+            info = DeviceInfo(
                 identifiers={(DOMAIN, f"{entry_id}_{zone_id}")},
                 name=f"HeatWise {controller.zone_name(zone_id)}",
                 manufacturer="HeatWise",
                 model="Zone",
-                via_device=(DOMAIN, f"{entry_id}_{HOUSE_ZONE_ID}"),
             )
+            house_key = (DOMAIN, f"{entry_id}_{HOUSE_ZONE_ID}")
+            if "via_device_id" in DeviceInfo.__annotations__:
+                # Home Assistant 2026.11+: link to the house by its device id.
+                house = dr.async_get(controller.hass).async_get_device(identifiers={house_key})
+                if house is not None:
+                    info["via_device_id"] = house.id
+            else:
+                info["via_device"] = house_key
+            self._attr_device_info = info
 
     async def async_added_to_hass(self) -> None:
         self.async_on_remove(
