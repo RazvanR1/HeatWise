@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1 - 2026-11-17
+
+- Fix: the gas (and hot water) of a burner run still in progress was lost when Home Assistant restarted, e.g. after an update. It is now booked when Home Assistant stops, and every 5 minutes during a long run
+
 ## 0.7.0 - 2026-11-17
 
 - Gas meter reading typed in by hand: a field in the panel and a `Gas meter reading` entity. Every reading corrects the gas estimate right away, without waiting for the supplier. An older index still shown by the supplier's sensor is ignored instead of being taken for a new meter

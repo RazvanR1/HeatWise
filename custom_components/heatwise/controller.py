@@ -10,6 +10,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     ATTR_ENTITY_ID,
     ATTR_TEMPERATURE,
+    EVENT_HOMEASSISTANT_STOP,
     STATE_ON,
     STATE_UNAVAILABLE,
     STATE_UNKNOWN,
@@ -133,6 +134,7 @@ from .smart import (
 _LOGGER = logging.getLogger(__name__)
 
 HEAT_ACTIONS = ("heating", "preheating")
+BURNER_BOOK_SECONDS = 300
 
 
 class MeterReadingError(ValueError):
@@ -329,6 +331,8 @@ class HeatWiseController:
                 self.hass, self._on_report_time, hour=REPORT_HOUR, minute=0, second=0
             )
         )
+        # book the burner run in progress when Home Assistant stops (update, restart)
+        self._unsubs.append(self.hass.bus.async_listen(EVENT_HOMEASSISTANT_STOP, self._on_stop))
         self.heat_demand = self._boiler_demand(self._state(self.config.get(CONF_BOILER)))
         if self.has_power:
             power = _float(self.hass.states.get(self.config[CONF_BOILER_POWER]))
@@ -346,6 +350,12 @@ class HeatWiseController:
         if self._debounce_unsub:
             self._debounce_unsub()
             self._debounce_unsub = None
+        self._flush_burner(dt_util.utcnow())
+        await self.store.async_save(self._store_data())
+
+    async def _on_stop(self, _event: Event) -> None:
+        """Home Assistant is stopping: keep the gas of a burner run still in progress."""
+        self._flush_burner(dt_util.utcnow())
         await self.store.async_save(self._store_data())
 
     def _store_data(self) -> dict[str, Any]:
@@ -417,6 +427,11 @@ class HeatWiseController:
     # ------------------------------------------------------------------ events
     @callback
     def _on_interval(self, _now: datetime) -> None:
+        now = dt_util.utcnow()
+        if self.burner_on_since is not None and (now - self.burner_on_since).total_seconds() >= BURNER_BOOK_SECONDS:
+            # a long run is booked as it goes, so even a crash loses only a few minutes
+            self._flush_burner(now)
+            self._save()
         for zone in self.zones:
             for eid in zone.get(CONF_ZONE_AC_POWER, []):
                 self._integrate_ac_power(zone, eid, self.hass.states.get(eid))

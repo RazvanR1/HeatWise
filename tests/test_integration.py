@@ -630,3 +630,43 @@ async def test_window_guess_can_be_turned_off(hass: HomeAssistant, freezer) -> N
     assert c.room_temperature("k1") == 19.5
     assert c.plan.zones["k1"].reason != "window_drop"
     assert not c.window_detector.is_open("k1")
+
+
+async def test_burner_run_in_progress_survives_a_restart(hass: HomeAssistant, freezer) -> None:
+    """A shower still running when Home Assistant restarts keeps its gas (and hot water)."""
+    from homeassistant.const import EVENT_HOMEASSISTANT_STOP
+
+    _boiler_call(hass, False)
+    _power(hass, 4)
+    entry = await _setup(hass, GAS)
+    async_mock_service(hass, "climate", "set_temperature")
+    c = entry.runtime_data
+    _power(hass, 70)
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(minutes=17))
+    hass.bus.async_fire(EVENT_HOMEASSISTANT_STOP)
+    await hass.async_block_till_done()
+    stored = hass_storage_values(hass, entry)
+    assert abs(stored["periods"]["values"]["today"]["dhw_m3"] - 2.0 * 17 / 60) < 0.01
+    assert abs(stored["periods"]["values"]["today"]["gas_m3"] - 2.0 * 17 / 60) < 0.01
+    # still counting on: the run in progress is not booked twice
+    freezer.tick(timedelta(minutes=3))
+    assert abs(c.period_value("dhw_m3", "today") - 2.0 * 20 / 60) < 0.01
+
+
+async def test_long_burner_run_is_booked_as_it_goes(hass: HomeAssistant, freezer) -> None:
+    _boiler_call(hass, True)
+    _power(hass, 4)
+    entry = await _setup(hass, GAS)
+    async_mock_service(hass, "climate", "set_temperature")
+    c = entry.runtime_data
+    _power(hass, 70)
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(minutes=6))
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=1), fire_all=True)
+    await hass.async_block_till_done()
+    assert abs(c.period_values["today"]["gas_m3"] - 0.2) < 0.01
+
+
+def hass_storage_values(hass, entry):
+    return entry.runtime_data._store_data()
