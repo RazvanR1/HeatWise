@@ -40,6 +40,7 @@ from .const import (
     CONF_EL_PRICE,
     CONF_EL_PRICE_ENTITY,
     CONF_FROST,
+    CONF_GAS_BY_POWER,
     CONF_GAS_KWH_PER_M3,
     CONF_GAS_METER,
     CONF_GAS_PRICE,
@@ -58,8 +59,13 @@ from .const import (
     CONF_PREHEAT,
     CONF_PREHEAT_MAX,
     CONF_SCHEDULE,
+    CONF_SPLIT_HOT_WATER,
     CONF_WARM_OFF,
     CONF_WEEKLY_REPORT,
+    CONF_WINDOW_DETECT,
+    CONF_WINDOW_DROP,
+    CONF_WINDOW_DROP_MINUTES,
+    CONF_WINDOW_HOLD,
     CONF_WINDOWS,
     CONF_ZONE_AC_POWER,
     CONF_ZONE_ACS,
@@ -82,6 +88,9 @@ from .const import (
     DEFAULT_GAS_KWH_PER_M3,
     DEFAULT_OVERRIDE_MINUTES,
     DEFAULT_PREHEAT_MAX,
+    DEFAULT_WINDOW_DROP,
+    DEFAULT_WINDOW_DROP_MINUTES,
+    DEFAULT_WINDOW_HOLD,
     DOMAIN,
     LANG_AUTO,
     LANGUAGES,
@@ -166,6 +175,12 @@ def house_schema(values: dict[str, Any], with_name: bool) -> vol.Schema:
                 _opt(CONF_WARM_OFF, values): _temp(10, 30),
                 _req(CONF_AWAY_DELAY, values, DEFAULT_AWAY_DELAY): _number(0, 240, 1),
                 _req(CONF_OVERRIDE_MINUTES, values, DEFAULT_OVERRIDE_MINUTES): _number(10, 1440, 5),
+                vol.Required(
+                    CONF_WINDOW_DETECT, default=values.get(CONF_WINDOW_DETECT, True)
+                ): selector.BooleanSelector(),
+                _req(CONF_WINDOW_DROP, values, DEFAULT_WINDOW_DROP): _number(0.3, 3, 0.1),
+                _req(CONF_WINDOW_DROP_MINUTES, values, DEFAULT_WINDOW_DROP_MINUTES): _number(2, 30, 1),
+                _req(CONF_WINDOW_HOLD, values, DEFAULT_WINDOW_HOLD): _number(5, 120, 5),
             }
         )
     fields[_req(CONF_LANGUAGE, values, LANG_AUTO)] = selector.SelectSelector(
@@ -202,6 +217,12 @@ def power_schema(values: dict[str, Any]) -> vol.Schema:
             _opt(CONF_GAS_METER, values): GAS_METER,
             _opt(CONF_GAS_RATE, values): _number(0.2, 6, 0.01),
             _req(CONF_GAS_KWH_PER_M3, values, DEFAULT_GAS_KWH_PER_M3): _number(8, 12, 0.01),
+            vol.Required(
+                CONF_GAS_BY_POWER, default=values.get(CONF_GAS_BY_POWER, True)
+            ): selector.BooleanSelector(),
+            vol.Required(
+                CONF_SPLIT_HOT_WATER, default=values.get(CONF_SPLIT_HOT_WATER, True)
+            ): selector.BooleanSelector(),
         }
     )
 

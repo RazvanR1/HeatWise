@@ -61,6 +61,7 @@ class ZoneState:
     room_temp: float | None = None
     schedule_on: bool | None = None
     window_open: bool = False
+    window_detected: bool = False
     preset: str = PRESET_SCHEDULE
     override_temp: float | None = None
     enabled: bool = True
@@ -189,6 +190,8 @@ def zone_target(
         return t.frost, "warm_outside"
     if state.window_open:
         return t.frost, "window_open"
+    if state.window_detected:
+        return t.frost, "window_drop"
     if state.override_temp is not None:
         return max(state.override_temp, t.frost), "manual"
     preset = state.preset
@@ -295,7 +298,9 @@ def evaluate(
 
     for cfg in zones:
         if cfg.has_trv and cfg.trv_follow_boiler:
-            plans[cfg.zone_id].trv_target = boiler_target
+            plan = plans[cfg.zone_id]
+            # an open window or a switched-off room keeps its valve closed
+            plan.trv_target = plan.target if plan.target <= cfg.temps.frost else boiler_target
 
     return Plan(
         source=source,
@@ -315,6 +320,7 @@ REASONS: dict[str, dict[str, str]] = {
         "off": "HeatWise is off: frost protection only",
         "warm_outside": "Warm outside: heating stopped",
         "window_open": "Window open: heating lowered",
+        "window_drop": "Temperature dropped fast: window probably open",
         "manual": "Manual temperature",
         "preset_comfort": "Comfort preset",
         "preset_eco": "Eco preset",
@@ -340,6 +346,7 @@ REASONS: dict[str, dict[str, str]] = {
         "off": "HeatWise e oprit: doar protecție la îngheț",
         "warm_outside": "Cald afară: încălzirea e oprită",
         "window_open": "Fereastră deschisă: încălzire redusă",
+        "window_drop": "Temperatura a scăzut brusc: probabil fereastră deschisă",
         "manual": "Temperatură setată manual",
         "preset_comfort": "Mod confort",
         "preset_eco": "Mod eco",

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.0 - 2026-11-17
+
+- Gas meter reading typed in by hand: a field in the panel and a `Gas meter reading` entity. Every reading corrects the gas estimate right away, without waiting for the supplier. An older index still shown by the supplier's sensor is ignored instead of being taken for a new meter
+- Hot water counted apart: on a combi boiler, burner time while the main thermostat is not calling for heat is hot water. New hot water gas and cost sensors for today, this month and this year; the heating cost and the weekly report leave it out
+- Gas counted by the plug power: a burn at a higher power than usual (the fan of a modulating boiler spins faster when it burns more) counts proportionally more. Meter readings calibrate against this weighted time
+- Open windows guessed from a fast temperature drop (0.8 °C in 10 minutes by default), without window sensors. The room goes to frost protection until it warms up again, at most 30 minutes, with a notification. Uses room sensors and the wall thermostat only, never a valve's or an AC's own reading
+- Valves that copy the main thermostat now close when their room has an open window
+
 ## 0.6.1 - 2026-11-15
 
 - Rooms are linked to the house device the way Home Assistant 2026.11 expects (`via_device_id`), removing the deprecation warning

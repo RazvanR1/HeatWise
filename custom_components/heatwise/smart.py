@@ -13,6 +13,8 @@ from .const import (
     ARRIVAL_MIN_PROGRESS_KM,
     HEAT_RATE_MAX,
     HEAT_RATE_MIN,
+    WINDOW_CLOSED_RISE,
+    WINDOW_MIN_OPEN_MINUTES,
 )
 
 _UNIT_TO_KM = {"m": 0.001, "km": 1.0, "mi": 1.609344, "ft": 0.0003048, "yd": 0.0009144}
@@ -110,6 +112,63 @@ class ArrivalWatcher:
         return False
 
 
+class WindowDetector:
+    """Guesses an open window from a fast drop of a room's temperature.
+
+    Heating, a switched-off AC or the night never cool a room by most of a
+    degree in a few minutes; cold air from an open window does.
+    """
+
+    def __init__(self) -> None:
+        self.history: dict[str, list[tuple[datetime, float]]] = {}
+        self.open_since: dict[str, datetime] = {}
+        self.lowest: dict[str, float] = {}
+
+    def is_open(self, key: str) -> bool:
+        return key in self.open_since
+
+    def update(
+        self,
+        key: str,
+        temp: float | None,
+        now: datetime,
+        drop: float,
+        minutes: float,
+        hold_minutes: float,
+    ) -> bool:
+        """Feed the current temperature of a room; True while a window seems open."""
+        if temp is None:
+            return self.is_open(key)
+        since = self.open_since.get(key)
+        if since is not None:
+            open_minutes = (now - since).total_seconds() / 60
+            lowest = min(self.lowest.get(key, temp), temp)
+            self.lowest[key] = lowest
+            recovering = temp >= lowest + WINDOW_CLOSED_RISE and open_minutes >= WINDOW_MIN_OPEN_MINUTES
+            if recovering or open_minutes >= hold_minutes:
+                self.open_since.pop(key, None)
+                self.lowest.pop(key, None)
+                # start over: closing must be followed by a new drop to count again
+                self.history[key] = [(now, temp)]
+                return False
+            return True
+        window = timedelta(minutes=minutes)
+        points = [p for p in self.history.get(key, []) if now - p[0] <= window]
+        points.append((now, temp))
+        self.history[key] = points
+        highest = max(v for _, v in points)
+        if highest - temp >= drop - 1e-9:
+            self.open_since[key] = now
+            self.lowest[key] = temp
+            return True
+        return False
+
+    def forget(self, key: str) -> None:
+        self.history.pop(key, None)
+        self.open_since.pop(key, None)
+        self.lowest.pop(key, None)
+
+
 def _num(value: float, lang: str, digits: int = 1) -> str:
     text = f"{value:,.{digits}f}"
     if lang == "ro":
@@ -122,11 +181,15 @@ MESSAGES = {
         "window_title": "HeatWise: window open",
         "window": "Window open in {zone}.",
         "window_lowered": "Window open in {zone}: heating lowered until it is closed.",
+        "window_drop": "The temperature in {zone} dropped fast: a window is probably open.",
+        "window_drop_lowered": "The temperature in {zone} dropped fast: a window is probably open. Heating lowered until the room warms up again.",
         "offline_title": "HeatWise: device not responding",
         "offline": "{device} has not responded for {minutes} minutes.",
         "online": "{device} responds again.",
         "report_title": "HeatWise: this week",
         "report_gas": "Gas: {m3} m³ ({cost} {cur}), burner {hours} h",
+        "report_gas_heating": "Gas for heating: {m3} m³ ({cost} {cur}), burner {hours} h",
+        "report_hot_water": "Hot water: {m3} m³ of gas ({cost} {cur})",
         "report_ac": "AC electricity: {kwh} kWh ({cost} {cur})",
         "report_total": "Total heating: {cost} {cur}",
         "report_last": "Last week: {cost} {cur}",
@@ -136,11 +199,15 @@ MESSAGES = {
         "window_title": "HeatWise: fereastră deschisă",
         "window": "Fereastră deschisă în {zone}.",
         "window_lowered": "Fereastră deschisă în {zone}: încălzirea e redusă până o închizi.",
+        "window_drop": "Temperatura în {zone} a scăzut brusc: probabil e o fereastră deschisă.",
+        "window_drop_lowered": "Temperatura în {zone} a scăzut brusc: probabil e o fereastră deschisă. Încălzirea e redusă până se încălzește din nou camera.",
         "offline_title": "HeatWise: dispozitiv care nu răspunde",
         "offline": "{device} nu mai răspunde de {minutes} minute.",
         "online": "{device} răspunde din nou.",
         "report_title": "HeatWise: săptămâna aceasta",
         "report_gas": "Gaz: {m3} m³ ({cost} {cur}), arzătorul a mers {hours} h",
+        "report_gas_heating": "Gaz pentru încălzire: {m3} m³ ({cost} {cur}), arzătorul a mers {hours} h",
+        "report_hot_water": "Apă caldă: {m3} m³ gaz ({cost} {cur})",
         "report_ac": "Curent AC: {kwh} kWh ({cost} {cur})",
         "report_total": "Total încălzire: {cost} {cur}",
         "report_last": "Săptămâna trecută: {cost} {cur}",
@@ -161,24 +228,41 @@ def weekly_report(
     currency: str,
     has_gas: bool,
     has_ac: bool,
+    has_hot_water: bool = False,
 ) -> str:
+    """Text of the Sunday report. With the hot water split, gas lines are heating only."""
     lang = lang[:2].lower()
     lines: list[str] = []
-    total = 0.0
+
+    def heating_total(values: dict[str, float]) -> float:
+        total = 0.0
+        if has_gas:
+            total += values.get("gas_cost", 0.0)
+            if has_hot_water:
+                total -= values.get("dhw_cost", 0.0)
+        if has_ac:
+            total += values.get("ac_cost", 0.0)
+        return total
+
     if has_gas:
-        total += week.get("gas_cost", 0.0)
+        m3 = week.get("gas_m3", 0.0)
+        cost = week.get("gas_cost", 0.0)
+        hours = week.get("burner_h", 0.0)
+        if has_hot_water:
+            m3 -= week.get("dhw_m3", 0.0)
+            cost -= week.get("dhw_cost", 0.0)
+            hours -= week.get("dhw_h", 0.0)
         lines.append(
             notify_text(
-                "report_gas",
+                "report_gas_heating" if has_hot_water else "report_gas",
                 lang,
-                m3=_num(week.get("gas_m3", 0.0), lang),
-                cost=_num(week.get("gas_cost", 0.0), lang, 2),
-                hours=_num(week.get("burner_h", 0.0), lang),
+                m3=_num(max(m3, 0.0), lang),
+                cost=_num(max(cost, 0.0), lang, 2),
+                hours=_num(max(hours, 0.0), lang),
                 cur=currency,
             )
         )
     if has_ac:
-        total += week.get("ac_cost", 0.0)
         lines.append(
             notify_text(
                 "report_ac",
@@ -190,8 +274,17 @@ def weekly_report(
         )
     if not lines:
         return notify_text("report_empty", lang)
-    lines.append(notify_text("report_total", lang, cost=_num(total, lang, 2), cur=currency))
+    lines.append(notify_text("report_total", lang, cost=_num(heating_total(week), lang, 2), cur=currency))
+    if has_gas and has_hot_water:
+        lines.append(
+            notify_text(
+                "report_hot_water",
+                lang,
+                m3=_num(week.get("dhw_m3", 0.0), lang),
+                cost=_num(week.get("dhw_cost", 0.0), lang, 2),
+                cur=currency,
+            )
+        )
     if last_week:
-        last = last_week.get("gas_cost", 0.0) * has_gas + last_week.get("ac_cost", 0.0) * has_ac
-        lines.append(notify_text("report_last", lang, cost=_num(last, lang, 2), cur=currency))
+        lines.append(notify_text("report_last", lang, cost=_num(heating_total(last_week), lang, 2), cur=currency))
     return "\n".join(lines)

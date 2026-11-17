@@ -83,14 +83,21 @@
           "warm_off_threshold": "Oprește încălzirea peste această temperatură afară",
           "away_delay": "Plecat după (minute)",
           "override_minutes": "Păstrează modificările manuale (minute)",
-          "language": "Limba textelor HeatWise"
+          "language": "Limba textelor HeatWise",
+          "window_detect": "Detectează ferestre deschise din scăderea bruscă a temperaturii",
+          "window_drop": "Scăderea de temperatură care înseamnă fereastră (°C)",
+          "window_drop_minutes": "…în cel mult (minute)",
+          "window_hold_minutes": "Ține încălzirea redusă cel mult (minute)"
         },
         "data_description": {
           "boiler_entity": "Opțional. Lasă gol pentru o casă încălzită doar cu aer condiționat.",
           "house_temp_sensor": "Opțional. Fără el se folosește temperatura citită de termostat.",
           "persons": "Opțional. Fără persoane, HeatWise consideră că e cineva acasă.",
           "schedule_entity": "Opțional. Merge cel mai bine un ajutor Program (Schedule). Fără el: confort cât e cineva acasă.",
-          "language": "Automat urmează limba Home Assistant. Panoul și textele de decizie folosesc limba aleasă."
+          "language": "Automat urmează limba Home Assistant. Panoul și textele de decizie folosesc limba aleasă.",
+          "window_detect": "Merge și fără senzori de fereastră. Folosește doar senzorii de cameră și termostatul de perete, niciodată citirea unui cap termostatic sau a unui AC.",
+          "window_drop": "O cameră încălzită se răcește rar cu mai mult de 0,3–0,5 °C în 10 minute; aerul rece de la o fereastră deschisă o face mult mai repede.",
+          "window_hold_minutes": "Încălzirea revine mai devreme imediat ce camera începe să se încălzească din nou (fereastra s-a închis)."
         }
       },
       "hybrid": {
@@ -115,12 +122,16 @@
           "burner_threshold": "Arzător pornit peste (W)",
           "gas_meter_entity": "Indexul contorului de gaz (opțional)",
           "gas_rate": "Gaz pe oră de funcționare (m³/h)",
-          "gas_kwh_per_m3": "Energie într-un m³ de gaz (kWh)"
+          "gas_kwh_per_m3": "Energie într-un m³ de gaz (kWh)",
+          "gas_by_power": "Socotește gazul după puterea prizei (modulare)",
+          "split_hot_water": "Socotește separat apa caldă"
         },
         "data_description": {
-          "gas_meter_entity": "Un senzor cu indexul contorului în m³, de exemplu din integrarea furnizorului de gaz sau de la un numărător de impulsuri. HeatWise învață consumul real pe oră de funcționare din fiecare citire nouă.",
+          "gas_meter_entity": "Un senzor cu indexul contorului în m³, de ex. din integrarea furnizorului de gaz sau un contor de impulsuri. HeatWise învață consumul real pe oră de arzător din fiecare citire nouă. Poți scrie oricând și singur un index, în panoul HeatWise sau în entitatea Index contor gaz.",
           "gas_rate": "Valoarea de pornire până o învață din contor. O centrală de 24 kW arde până la aproximativ 2,5 m³/h.",
-          "gas_kwh_per_m3": "Scrie pe factura de gaz (puterea calorifică); în România aproximativ 10,5 kWh."
+          "gas_kwh_per_m3": "Scrie pe factura de gaz (puterea calorifică); în România aproximativ 10,5 kWh.",
+          "gas_by_power": "Ventilatorul unei centrale cu modulare consumă mai mult curent când arde mai mult gaz, așa că o ardere la putere mai mare contează mai mult. Fiecare citire a contorului corectează scara.",
+          "split_hot_water": "Pentru o centrală mixtă: timpul în care arzătorul merge fără ca termostatul principal să ceară căldură e apă caldă (duș, robinet). Costul încălzirii o lasă deoparte. Are nevoie de termostatul principal."
         }
       },
       "add_zone": {
@@ -342,6 +353,24 @@
       },
       "heating_cost_year": {
         "name": "Cost încălzire anul acesta"
+      },
+      "hot_water_today": {
+        "name": "Gaz apă caldă azi"
+      },
+      "hot_water_month": {
+        "name": "Gaz apă caldă luna aceasta"
+      },
+      "hot_water_year": {
+        "name": "Gaz apă caldă anul acesta"
+      },
+      "hot_water_cost_today": {
+        "name": "Cost apă caldă azi"
+      },
+      "hot_water_cost_month": {
+        "name": "Cost apă caldă luna aceasta"
+      },
+      "hot_water_cost_year": {
+        "name": "Cost apă caldă anul acesta"
       }
     },
     "binary_sensor": {
@@ -359,6 +388,19 @@
       "use_ac": {
         "name": "Încălzire cu aerul condiționat"
       }
+    },
+    "number": {
+      "gas_meter_reading": {
+        "name": "Index contor gaz"
+      }
+    }
+  },
+  "exceptions": {
+    "meter_negative": {
+      "message": "Indexul contorului de gaz nu poate fi negativ."
+    },
+    "meter_too_low": {
+      "message": "Indexul e mai mic decât ultima citire ({last} m³). Verifică cifrele; un contor nou pornește de la un index mult mai mic."
     }
   }
 }

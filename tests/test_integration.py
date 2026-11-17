@@ -441,3 +441,192 @@ async def test_notifications_and_language(hass: HomeAssistant, freezer) -> None:
     await controller.async_send_weekly_report()
     await hass.async_block_till_done()
     assert sent[-1].data["title"] == "HeatWise: săptămâna aceasta"
+
+
+def _power(hass, watts) -> None:
+    hass.states.async_set("sensor.boiler_power", str(watts), {"unit_of_measurement": "W", "device_class": "power"})
+
+
+def _boiler_call(hass, heating: bool) -> None:
+    hass.states.async_set(
+        BOILER,
+        "heat",
+        {
+            "temperature": 21, "current_temperature": 20.5, "min_temp": 5, "max_temp": 30,
+            "target_temp_step": 0.5, "hvac_modes": ["off", "heat"],
+            "hvac_action": "heating" if heating else "idle",
+        },
+    )
+
+
+GAS = {
+    **BASE,
+    "boiler_entity": BOILER,
+    "boiler_power_sensor": "sensor.boiler_power", "burner_threshold": 30,
+    "gas_rate": 2.0, "gas_kwh_per_m3": 10.0, "gas_price": 0.3,
+}
+
+
+async def test_hot_water_is_counted_apart(hass: HomeAssistant, freezer) -> None:
+    _boiler_call(hass, False)
+    _power(hass, 4)
+    entry = await _setup(hass, GAS)
+    async_mock_service(hass, "climate", "set_temperature")
+    c = entry.runtime_data
+    assert c.split_hot_water
+
+    # a 30 minute shower: burner on, no heat call
+    _power(hass, 70)
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(minutes=30))
+    _power(hass, 4)
+    await hass.async_block_till_done()
+
+    # 30 minutes of heating, the burner keeps going 60 s after the call ends (pump overrun)
+    _boiler_call(hass, True)
+    await hass.async_block_till_done()
+    _power(hass, 70)
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(minutes=30))
+    _boiler_call(hass, False)
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(seconds=60))
+    _power(hass, 4)
+    await hass.async_block_till_done()
+
+    assert abs(c.period_value("dhw_m3", "today") - 1.0) < 0.01
+    assert abs(c.period_value("gas_m3", "today") - (2.0 + 2.0 / 60)) < 0.01
+    await _tick(hass, 70)
+    assert abs(float(hass.states.get("sensor.heatwise_home_hot_water_gas_today").state) - 1.0) < 0.01
+    assert abs(float(hass.states.get("sensor.heatwise_home_hot_water_cost_today").state) - 3.0) < 0.05
+    # heating cost leaves the shower out: 1.033 m³ × 10 kWh × 0.3
+    assert abs(float(hass.states.get("sensor.heatwise_home_heating_cost_today").state) - 3.1) < 0.05
+    gas = hass.states.get("sensor.heatwise_home_gas_today")
+    assert abs(gas.attributes["hot_water_m3"] - 1.0) < 0.01
+
+
+async def test_gas_counts_by_plug_power(hass: HomeAssistant, freezer) -> None:
+    _boiler_call(hass, True)
+    _power(hass, 4)
+    entry = await _setup(hass, {**GAS, "split_hot_water": False})
+    async_mock_service(hass, "climate", "set_temperature")
+    c = entry.runtime_data
+    assert not c.split_hot_water
+    _power(hass, 60)
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(hours=1))
+    # the fan speeds up: the boiler burns more gas
+    _power(hass, 90)
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(hours=1))
+    _power(hass, 4)
+    await hass.async_block_till_done()
+    assert c.power_ref is not None
+    # 1 h × 2 m³/h at the usual power + 1 h × 2 m³/h × 1.5
+    assert abs(c.gas_today_live - 5.0) < 0.01
+    assert abs(c.burner_load_live_seconds / 3600 - 2.5) < 0.01
+
+
+async def test_gas_meter_reading_typed_in(hass: HomeAssistant, freezer) -> None:
+    from homeassistant.exceptions import ServiceValidationError
+
+    _boiler_call(hass, True)
+    _power(hass, 4)
+    hass.states.async_set("sensor.gas_meter", "290", {"unit_of_measurement": "m³"})
+    entry = await _setup(hass, {**GAS, "gas_meter_entity": "sensor.gas_meter"})
+    async_mock_service(hass, "climate", "set_temperature")
+    c = entry.runtime_data
+    meter = "number.heatwise_home_gas_meter_reading"
+    await _tick(hass)
+    assert float(hass.states.get(meter).state) == 290
+
+    _power(hass, 65)
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(hours=4))
+    _power(hass, 4)
+    await hass.async_block_till_done()
+
+    # read on the meter: 6 m³ in 4 burner hours
+    await hass.services.async_call("number", "set_value", {"entity_id": meter, "value": 296}, blocking=True)
+    assert c.gas_calibrations == 1 and abs(c.gas_rate - 1.5) < 0.001
+    assert c.gas_baseline["source"] == "manual"
+    await hass.async_block_till_done()
+    assert float(hass.states.get(meter).state) == 296
+
+    # a typo below the last reading is refused
+    try:
+        await hass.services.async_call("number", "set_value", {"entity_id": meter, "value": 280}, blocking=True)
+        raise AssertionError("expected a validation error")
+    except ServiceValidationError as err:
+        assert err.translation_key == "meter_too_low"
+    assert c.gas_baseline["meter"] == 296
+
+    # the supplier's sensor still shows last month's index: ignored, not a new meter
+    hass.states.async_set("sensor.gas_meter", "291", {"unit_of_measurement": "m³"})
+    await hass.async_block_till_done()
+    assert c.gas_baseline["meter"] == 296 and c.gas_calibrations == 1
+
+    # a reading soon after keeps counting from the last calibration
+    await hass.services.async_call("number", "set_value", {"entity_id": meter, "value": 296.2}, blocking=True)
+    assert c.gas_baseline["meter"] == 296 and c.last_meter_reading == 296.2
+
+
+async def test_window_guessed_from_a_temperature_drop(hass: HomeAssistant, freezer) -> None:
+    _thermostat(hass, BOILER, 21, 20.5)
+    _thermostat(hass, TRV, 21, 21)
+    hass.states.async_set("sensor.kitchen_temp", "21.0", {"unit_of_measurement": "°C", "device_class": "temperature"})
+    entry = await _setup(
+        hass,
+        {
+            **BASE,
+            "boiler_entity": BOILER,
+            "notify_targets": ["notify.phone"],
+            "zones": [{"zone_id": "k1", "zone_name": "Kitchen", "trvs": [TRV], "temp_sensor": "sensor.kitchen_temp", "trv_follow_boiler": False}],
+        },
+    )
+    sent = async_mock_service(hass, "notify", "phone")
+    calls = async_mock_service(hass, "climate", "set_temperature")
+    await _tick(hass)
+    for temp in ("20.7", "20.4", "20.1"):
+        freezer.tick(timedelta(minutes=1))
+        hass.states.async_set("sensor.kitchen_temp", temp, {"unit_of_measurement": "°C", "device_class": "temperature"})
+        await _tick(hass, 5)
+    c = entry.runtime_data
+    assert c.plan.zones["k1"].reason == "window_drop"
+    assert any(x.data["entity_id"] == TRV and x.data["temperature"] == 7 for x in calls)
+    assert any("probably open" in x.data["message"] for x in sent)
+    assert hass.states.get("sensor.heatwise_home_decision").attributes["window_suspected"] == ["Kitchen"]
+    # the valve's own reading is never used: the house zone has no sensor of its own here
+    assert c.plan.house_reason != "window_drop"
+
+    # the room warms again: window closed
+    for temp in ("20.2", "20.5"):
+        freezer.tick(timedelta(minutes=2))
+        hass.states.async_set("sensor.kitchen_temp", temp, {"unit_of_measurement": "°C", "device_class": "temperature"})
+        await hass.async_block_till_done()
+        async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=5), fire_all=True)
+        await hass.async_block_till_done()
+    assert c.plan.zones["k1"].reason != "window_drop"
+
+
+async def test_window_guess_can_be_turned_off(hass: HomeAssistant, freezer) -> None:
+    _thermostat(hass, TRV, 21, 21)
+    hass.states.async_set("sensor.kitchen_temp", "21.0", {"unit_of_measurement": "°C", "device_class": "temperature"})
+    entry = await _setup(
+        hass,
+        {
+            **BASE, "window_detect": False,
+            "zones": [{"zone_id": "k1", "zone_name": "Kitchen", "trvs": [TRV], "temp_sensor": "sensor.kitchen_temp", "trv_follow_boiler": False}],
+        },
+    )
+    async_mock_service(hass, "climate", "set_temperature")
+    await _tick(hass)
+    freezer.tick(timedelta(minutes=2))
+    hass.states.async_set("sensor.kitchen_temp", "19.5", {"unit_of_measurement": "°C", "device_class": "temperature"})
+    await hass.async_block_till_done()
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=5), fire_all=True)
+    await hass.async_block_till_done()
+    c = entry.runtime_data
+    assert c.room_temperature("k1") == 19.5
+    assert c.plan.zones["k1"].reason != "window_drop"
+    assert not c.window_detector.is_open("k1")

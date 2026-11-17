@@ -39,6 +39,9 @@ async def async_setup_entry(
         entities += [BurnerRuntimeSensor(controller), GasTotalSensor(controller), GasRateSensor(controller)]
         entities += [PeriodSensor(controller, "gas", p) for p in PERIODS]
         entities += [PeriodSensor(controller, "gas_cost", p) for p in PERIODS]
+        if controller.split_hot_water:
+            entities += [PeriodSensor(controller, "hot_water", p) for p in PERIODS]
+            entities += [PeriodSensor(controller, "hot_water_cost", p) for p in PERIODS]
     if controller.has_ac_power:
         entities += [PeriodSensor(controller, "ac_energy", p) for p in PERIODS]
         entities += [PeriodSensor(controller, "ac_cost", p) for p in PERIODS]
@@ -73,6 +76,9 @@ class DecisionSensor(HeatWiseEntity, SensorEntity):
             "anyone_home": self.controller.anyone_home,
             "observing_only": not self.controller.control_enabled,
             "on_the_way_home": self.controller.arrival.until is not None,
+            "window_suspected": [
+                self.controller.zone_name(zid) for zid, on in self.controller.windows_detected.items() if on
+            ],
             "preheating": [
                 self.controller.zone_name(zid) for zid, on in self.controller.preheating.items() if on
             ],
@@ -201,6 +207,10 @@ class GasRateSensor(HeatWiseEntity, SensorEntity):
             "last_meter_reading": (c.gas_baseline or {}).get("meter"),
             "last_reading_at": (c.gas_baseline or {}).get("at"),
             "burner_hours_total": round(c.burner_total_live_seconds / 3600, 2),
+            "weighted_by_plug_power": c.gas_by_power,
+            "usual_burner_power_w": c.power_ref,
+            "burner_power_now_w": c.burner_power,
+            "hot_water_counted_apart": c.split_hot_water,
         }
 
 
@@ -208,6 +218,8 @@ _METRICS = {
     # kind: (controller metric, device class, unit or None for currency, needs price)
     "gas": ("gas_m3", SensorDeviceClass.GAS, UnitOfVolume.CUBIC_METERS, None),
     "gas_cost": ("gas_cost", SensorDeviceClass.MONETARY, None, "gas"),
+    "hot_water": ("dhw_m3", SensorDeviceClass.GAS, UnitOfVolume.CUBIC_METERS, None),
+    "hot_water_cost": ("dhw_cost", SensorDeviceClass.MONETARY, None, "gas"),
     "ac_energy": ("ac_kwh", SensorDeviceClass.ENERGY, UnitOfEnergy.KILO_WATT_HOUR, None),
     "ac_cost": ("ac_cost", SensorDeviceClass.MONETARY, None, "electricity"),
     "heating_cost": (None, SensorDeviceClass.MONETARY, None, "any"),
@@ -270,7 +282,15 @@ class PeriodSensor(HeatWiseEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        if self._kind == "gas":
-            c = self.controller
-            return {"energy_kwh": round(c.period_value("gas_m3", self._period) * c.gas_kwh_per_m3, 2), "estimated": True}
+        c = self.controller
+        if self._kind in ("gas", "hot_water"):
+            m3 = c.period_value(self._metric, self._period)
+            attrs = {"energy_kwh": round(m3 * c.gas_kwh_per_m3, 2), "estimated": True}
+            if self._kind == "gas" and c.split_hot_water:
+                hot = c.period_value("dhw_m3", self._period)
+                attrs["heating_m3"] = round(max(m3 - hot, 0.0), 3)
+                attrs["hot_water_m3"] = round(hot, 3)
+            return attrs
+        if self._kind == "heating_cost" and c.split_hot_water:
+            return {"hot_water_excluded": True}
         return {}

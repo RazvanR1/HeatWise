@@ -99,6 +99,7 @@ def _house_status(hass: HomeAssistant, entry) -> dict[str, Any]:
         "name": controller.name,
         "has_ac": controller.has_ac,
         "has_power": controller.has_power,
+        "hot_water_split": controller.split_hot_water,
         "language": controller.language_setting,
         "outdoor": controller.config.get(CONF_OUTDOOR),
         "entities": {
@@ -110,13 +111,16 @@ def _house_status(hass: HomeAssistant, entry) -> dict[str, Any]:
             "burner_runtime": _entity(reg, "sensor", f"{eid}_{HOUSE_ZONE_ID}_burner_runtime"),
             "burner_running": _entity(reg, "binary_sensor", f"{eid}_{HOUSE_ZONE_ID}_burner_running"),
             "anyone_home": _entity(reg, "binary_sensor", f"{eid}_{HOUSE_ZONE_ID}_anyone_home"),
+            "meter_reading": _entity(reg, "number", f"{eid}_{HOUSE_ZONE_ID}_gas_meter_reading"),
         },
         "periods": {
             kind: {
                 period: _entity(reg, "sensor", f"{eid}_{HOUSE_ZONE_ID}_{kind}_{period}")
                 for period in PERIODS
             }
-            for kind in ("gas", "gas_cost", "ac_energy", "ac_cost", "heating_cost")
+            for kind in (
+                "gas", "gas_cost", "hot_water", "hot_water_cost", "ac_energy", "ac_cost", "heating_cost"
+            )
         },
         "zones": zones,
         "source_text": controller.explanation() if plan else None,

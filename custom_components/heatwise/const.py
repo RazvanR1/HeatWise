@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 DOMAIN = "heatwise"
-PLATFORMS = ["climate", "sensor", "binary_sensor", "switch"]
+PLATFORMS = ["climate", "sensor", "binary_sensor", "switch", "number"]
 
 HOUSE_ZONE_ID = "house"
 
@@ -23,6 +23,12 @@ CONF_FROST = "frost_temp"
 CONF_WARM_OFF = "warm_off_threshold"
 CONF_OVERRIDE_MINUTES = "override_minutes"
 CONF_LANGUAGE = "language"
+
+# Open window guessed from a fast temperature drop
+CONF_WINDOW_DETECT = "window_detect"
+CONF_WINDOW_DROP = "window_drop"
+CONF_WINDOW_DROP_MINUTES = "window_drop_minutes"
+CONF_WINDOW_HOLD = "window_hold_minutes"
 LANG_AUTO = "auto"
 LANGUAGES = (LANG_AUTO, "en", "ro")
 
@@ -66,6 +72,8 @@ CONF_BURNER_THRESHOLD = "burner_threshold"
 CONF_GAS_METER = "gas_meter_entity"
 CONF_GAS_RATE = "gas_rate"
 CONF_GAS_KWH_PER_M3 = "gas_kwh_per_m3"
+CONF_GAS_BY_POWER = "gas_by_power"
+CONF_SPLIT_HOT_WATER = "split_hot_water"
 
 # Zones
 CONF_ZONES = "zones"
@@ -99,6 +107,18 @@ DEFAULT_GAS_KWH_PER_M3 = 10.5
 GAS_RATE_MIN = 0.2
 GAS_RATE_MAX = 6.0
 GAS_CALIBRATION_MIN_HOURS = 3.0
+POWER_WEIGHT_MIN = 0.5
+POWER_WEIGHT_MAX = 1.6
+POWER_REF_HOURS = 10.0  # the reference burner power follows roughly the last 10 burner hours
+HOT_WATER_GRACE_SECONDS = 90  # burner time right after a heat call still counts as heating
+METER_SOURCE_SENSOR = "sensor"
+METER_SOURCE_MANUAL = "manual"
+
+DEFAULT_WINDOW_DROP = 0.8
+DEFAULT_WINDOW_DROP_MINUTES = 10
+DEFAULT_WINDOW_HOLD = 30
+WINDOW_CLOSED_RISE = 0.3
+WINDOW_MIN_OPEN_MINUTES = 3
 
 DEFAULT_PREHEAT_MAX = 180
 DEFAULT_ARRIVAL_KM = 15.0

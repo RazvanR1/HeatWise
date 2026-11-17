@@ -83,14 +83,21 @@
           "warm_off_threshold": "Stop heating above this outdoor temperature",
           "away_delay": "Away after (minutes)",
           "override_minutes": "Keep manual changes for (minutes)",
-          "language": "Language of HeatWise texts"
+          "language": "Language of HeatWise texts",
+          "window_detect": "Guess open windows from a fast temperature drop",
+          "window_drop": "Temperature drop that means a window (°C)",
+          "window_drop_minutes": "…within (minutes)",
+          "window_hold_minutes": "Keep the heating low for at most (minutes)"
         },
         "data_description": {
           "boiler_entity": "Optional. Leave empty for a house heated only by air conditioners.",
           "house_temp_sensor": "Optional. Without it the thermostat's own reading is used.",
           "persons": "Optional. Without people HeatWise assumes someone is home.",
           "schedule_entity": "Optional. A Schedule helper works best. Without it: comfort while someone is home.",
-          "language": "Automatic follows Home Assistant. The panel and the decision texts use this language."
+          "language": "Automatic follows Home Assistant. The panel and the decision texts use this language.",
+          "window_detect": "Works without window sensors. Uses room sensors and the wall thermostat only, never the reading of a valve or an AC.",
+          "window_drop": "A heated room rarely cools more than 0.3–0.5 °C in 10 minutes; cold air from an open window does much more.",
+          "window_hold_minutes": "Heating comes back earlier as soon as the room starts warming up again (window closed)."
         }
       },
       "hybrid": {
@@ -115,12 +122,16 @@
           "burner_threshold": "Burner on above (W)",
           "gas_meter_entity": "Gas meter index (optional)",
           "gas_rate": "Gas per burner hour (m³/h)",
-          "gas_kwh_per_m3": "Energy in 1 m³ of gas (kWh)"
+          "gas_kwh_per_m3": "Energy in 1 m³ of gas (kWh)",
+          "gas_by_power": "Count gas by the plug power (modulation)",
+          "split_hot_water": "Count hot water apart"
         },
         "data_description": {
-          "gas_meter_entity": "A sensor with the meter index in m³, e.g. from your gas supplier's integration or a pulse counter. HeatWise learns the real gas use per burner hour from every new reading.",
+          "gas_meter_entity": "A sensor with the meter index in m³, e.g. from your gas supplier's integration or a pulse counter. HeatWise learns the real gas use per burner hour from every new reading. You can also type a reading in the HeatWise panel or in the Gas meter reading entity at any time.",
           "gas_rate": "Starting value until HeatWise learns it from the meter. A 24 kW boiler burns up to about 2.5 m³/h.",
-          "gas_kwh_per_m3": "Written on the gas bill (calorific value); about 10.5 kWh in Romania."
+          "gas_kwh_per_m3": "Written on the gas bill (calorific value); about 10.5 kWh in Romania.",
+          "gas_by_power": "A modulating boiler's fan draws more power when it burns more gas, so a burn at a higher power counts more. Every meter reading corrects the scale.",
+          "split_hot_water": "For a combi boiler: burner time while the main thermostat is not calling for heat is hot water (shower, tap). Heating cost then leaves it out. Needs the main thermostat."
         }
       },
       "add_zone": {
@@ -342,6 +353,24 @@
       },
       "heating_cost_year": {
         "name": "Heating cost this year"
+      },
+      "hot_water_today": {
+        "name": "Hot water gas today"
+      },
+      "hot_water_month": {
+        "name": "Hot water gas this month"
+      },
+      "hot_water_year": {
+        "name": "Hot water gas this year"
+      },
+      "hot_water_cost_today": {
+        "name": "Hot water cost today"
+      },
+      "hot_water_cost_month": {
+        "name": "Hot water cost this month"
+      },
+      "hot_water_cost_year": {
+        "name": "Hot water cost this year"
       }
     },
     "binary_sensor": {
@@ -359,6 +388,19 @@
       "use_ac": {
         "name": "Heat with air conditioners"
       }
+    },
+    "number": {
+      "gas_meter_reading": {
+        "name": "Gas meter reading"
+      }
+    }
+  },
+  "exceptions": {
+    "meter_negative": {
+      "message": "The gas meter index cannot be negative."
+    },
+    "meter_too_low": {
+      "message": "This index is lower than the last reading ({last} m³). Check the digits; a new meter starts from a much lower index."
     }
   }
 }

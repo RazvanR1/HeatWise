@@ -1,7 +1,7 @@
 # 🌡️ HeatWise – smart hybrid heating for Home Assistant
 
 [![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
-![Version](https://img.shields.io/badge/version-0.6.1-blue)
+![Version](https://img.shields.io/badge/version-0.7.0-blue)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 ![Local only](https://img.shields.io/badge/cloud-none-success)
 [![Tests](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml/badge.svg)](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml)
@@ -32,8 +32,10 @@ AC that Home Assistant can see, and everything runs locally.
 | 🚗 **Warms up when you head home** | With the distance sensors of Home Assistant's Proximity integration it raises the house from away to comfort while someone is driving home. |
 | ✋ **Respects manual changes** | Turn a thermostat by hand and the change is kept for the time you choose, or until the next schedule step. |
 | 🪟 **Windows and warm days** | An open window lowers that room to frost protection; above an outdoor temperature you choose, heating stops. |
+| 🌬️ **Open windows without sensors** | When a room's temperature drops fast (0.8 °C in 10 minutes by default – a heated room never cools that fast on its own) HeatWise assumes a window is open and lowers the heating until the room warms up again. Uses room sensors and the wall thermostat only. |
 | ⚡ **Boiler power plug** (optional) | A smart plug on the boiler shows when the burner runs and for how long today. |
-| ⛽ **Gas use and cost** | From the burner time HeatWise estimates the gas used today, this month and this year (m³, kWh, money) and in total, ready for the **Energy** dashboard. Point it at your gas meter index (e.g. your supplier's integration) and it learns the real m³ per burner hour from every reading. |
+| ⛽ **Gas use and cost** | From the burner time and the plug power (a modulating boiler's fan draws more when it burns more) HeatWise estimates the gas used today, this month and this year (m³, kWh, money) and in total, ready for the **Energy** dashboard. Point it at your gas meter index (e.g. your supplier's integration), or type the index from the panel whenever you read the meter, and it learns the real gas use from every reading. |
+| 🚿 **Hot water apart** | On a combi boiler, burner time while the thermostat is not calling for heat is a shower or a tap. HeatWise counts it apart, so the cost of heating is the cost of heating. |
 | 🔌 **AC electricity and total cost** | With a power sensor on each AC (a smart plug), it counts the energy and cost the ACs use **while heating** – today, this month, this year – and adds it to the gas for the total cost of heating. |
 | 🔔 **Notifications** (optional) | To your phone, Telegram or any notify service: a window left open, a thermostat, valve or AC that stopped responding, and a weekly report on Sunday evening with the gas, electricity and cost of the week. |
 | 👀 **Observe-only mode** | Turn off *HeatWise control* and it shows what it would do without touching any device. Ideal for trying it next to your current setup. |
@@ -129,6 +131,9 @@ two, then disable your old heating automations and turn **HeatWise control** on.
 | Boiler power sensor / Burner on above | — / 30 W | Burner on and runtime today from a smart plug. |
 | Gas meter index | — | A sensor with the meter index in m³ (supplier integration, pulse counter…). Every new reading recalibrates the m³ per burner hour. |
 | Gas per burner hour | from the boiler power, else 1.5 m³/h | Starting value until it is learned from the meter. |
+| Count gas by the plug power | on | A burn at a higher plug power than usual counts proportionally more (between 0.5× and 1.6×). The meter readings correct the scale. |
+| Count hot water apart | on | Burner time while the main thermostat is not calling for heat (after a 90 s grace) is hot water. Needs the main thermostat. |
+| Guess open windows from a temperature drop | on, 0.8 °C in 10 min, at most 30 min | Lowers a room to frost protection when its sensor drops fast; back as soon as it warms 0.3 °C again. |
 | Energy in 1 m³ of gas | 10.5 kWh | The calorific value from your gas bill. |
 
 ### Entities
@@ -144,7 +149,9 @@ two, then disable your old heating automations and turn **HeatWise control** on.
 | `sensor.…_gas_today` / `…_gas_this_month` / `…_gas_this_year` / `…_gas_total` | Estimated gas use in m³ (the total works in the Energy dashboard). Only with a boiler power plug. |
 | `sensor.…_gas_cost_today` / `…_this_month` / `…_this_year` | Gas cost, when the gas price is set. |
 | `sensor.…_ac_heating_energy_today` / `…_this_month` / `…_this_year` and `…_ac_heating_cost_…` | Energy and cost of the ACs while heating. Only with AC power sensors. |
-| `sensor.…_heating_cost_today` / `…_this_month` / `…_this_year` | Gas and AC together. |
+| `sensor.…_hot_water_gas_today` / `…_this_month` / `…_this_year` and `…_hot_water_cost_…` | Gas and cost of the hot water (combi boiler with a main thermostat). |
+| `sensor.…_heating_cost_today` / `…_this_month` / `…_this_year` | Gas for heating and AC together; the hot water is left out when it is counted apart. |
+| `number.…_gas_meter_reading` | Type the index of the gas meter whenever you read it; every reading corrects the gas estimate. Also in the panel. |
 | `sensor.…_gas_per_burner_hour` | The m³ per burner hour in use, and whether it was learned from the meter. |
 | `binary_sensor.…_anyone_home` | Presence as HeatWise sees it (only with people). |
 | `switch.…_heatwise_control` | Off = observe only. |
@@ -160,8 +167,9 @@ two, then disable your old heating automations and turn **HeatWise control** on.
 
 - Languages: English and Romanian. Another one is one file in `translations/` and one dictionary
   in `frontend/heatwise-panel.js` — PRs welcome.
-- Gas use is an estimate from the burner time (±10–15 %); it gets better with every meter reading.
-  For exact numbers, feed a pulse counter on the gas meter as the meter index.
+- Gas use is an estimate from the burner time and plug power (±10 %); it gets better with every meter
+  reading. For exact numbers, feed a pulse counter on the gas meter as the meter index.
+- Hot water drawn while the heating is running counts as heating: the boiler cannot tell HeatWise.
 - The AC efficiency (COP) is a simple linear estimate; set *COP at 7 °C* from your AC's datasheet
   for a better comparison.
 - A boiler with an on/off room thermostat can only be asked for heat through that thermostat;
@@ -200,9 +208,9 @@ HeatWise is free and open source, built in my spare time. If it helps your home,
 
 - **Alege cu ce încălzește.** Compară prețul gazului cu cel al curentului, ținând cont de eficiența aerului condiționat la temperatura de afară, sau folosește un prag de temperatură. În zilele blânde încălzește cu AC-urile, iar centrala stă.
 - **Conduce totul ca un singur sistem:** centrala, capetele termostatice și AC-urile, după senzorii din camere, programul tău și cine e acasă. Respectă modificările făcute de mână.
-- **Arată cât gaz consumă centrala și cât costă**, estimat din timpul de funcționare al arzătorului și corectat singur după indexul contorului.
+- **Arată cât gaz consumă centrala și cât costă**, estimat din timpul și puterea arzătorului, cu apa caldă separat, și corectat după indexul contorului – din integrarea furnizorului sau scris de tine în panou.
 - **E cald la timp:** învață cât de repede se încălzește casa, pornește din timp înainte de program și încălzește când vii spre casă.
-- **Te anunță** de ferestre lăsate deschise, de aparate care nu mai răspund și îți trimite un raport săptămânal cu consumul și costul.
+- **Simte ferestrele deschise** și fără senzori, din scăderea bruscă a temperaturii, și te anunță de ferestre lăsate deschise, de aparate care nu mai răspund și îți trimite un raport săptămânal cu consumul și costul.
 - **Se explică.** Panoul din bara laterală și senzorul *Decizie* spun pe înțelesul tuturor de ce casa are temperatura pe care o are.
 - **Poate doar să observe**, ca să-l încerci lângă ce ai acum fără să atingă vreun aparat.
 

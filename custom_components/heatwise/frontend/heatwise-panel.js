@@ -24,9 +24,16 @@ const STR = {
     month: "This month",
     year: "This year",
     gas_row: "Gas",
+    gas_heating: "Gas for heating",
+    hot_water: "Hot water (gas)",
+    meter: "Gas meter index",
+    meter_save: "Save",
+    meter_hint: "Read the meter and type the index: it corrects the gas estimate right away.",
+    meter_saved: "Saved. The gas estimate is corrected from this reading.",
+    meter_bad: "Type the index as a number, e.g. 312.456",
     ac_power: "AC electricity",
     total: "Total heating",
-    estimate_note: "Gas is estimated from the burner time and corrected at every meter reading. Counting starts when HeatWise is installed.",
+    estimate_note: "Gas is estimated from the burner time and the plug power, and corrected at every meter reading. Hot water is counted apart from version 0.7. Counting starts when HeatWise is installed.",
     burning: "burning now",
     cop: "AC efficiency (COP)",
     cost: "Cost of 1 kWh of heat",
@@ -72,9 +79,16 @@ const STR = {
     month: "Luna aceasta",
     year: "Anul acesta",
     gas_row: "Gaz",
+    gas_heating: "Gaz pentru încălzire",
+    hot_water: "Apă caldă (gaz)",
+    meter: "Index contor gaz",
+    meter_save: "Salvează",
+    meter_hint: "Citește contorul și scrie indexul: corectează imediat estimarea gazului.",
+    meter_saved: "Salvat. Estimarea gazului se corectează de la această citire.",
+    meter_bad: "Scrie indexul ca număr, de ex. 312,456",
     ac_power: "Curent AC",
     total: "Total încălzire",
-    estimate_note: "Gazul e estimat din timpul de funcționare al arzătorului și corectat la fiecare citire a contorului. Numărătoarea începe de la instalarea HeatWise.",
+    estimate_note: "Gazul e estimat din timpul și puterea arzătorului și corectat la fiecare citire a contorului. Apa caldă e numărată separat de la versiunea 0.7. Numărătoarea începe de la instalarea HeatWise.",
     burning: "arde acum",
     cop: "Eficiența AC (COP)",
     cost: "Cost 1 kWh căldură",
@@ -124,6 +138,9 @@ class HeatWisePanel extends HTMLElement {
     this._sig = "";
     this._raf = null;
     this.shadowRoot.addEventListener("click", (ev) => this._onClick(ev));
+    this.shadowRoot.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" && ev.target?.id === "meter") this._saveMeter(ev.target.dataset.entity);
+    });
   }
 
   set hass(hass) {
@@ -234,6 +251,26 @@ class HeatWisePanel extends HTMLElement {
       this._schedule(true);
     } else if (act === "control") this._toggleControl(entity, value === "on");
     else if (act === "use_ac") this._call("switch", value === "on" ? "turn_on" : "turn_off", { entity_id: entity });
+    else if (act === "meter") this._saveMeter(entity);
+  }
+
+  async _saveMeter(entity) {
+    const input = this.shadowRoot.querySelector("#meter");
+    if (!input || !entity) return;
+    const value = parseFloat(String(input.value).trim().replace(/\s/g, "").replace(",", "."));
+    if (!Number.isFinite(value) || value < 0) {
+      this._meterMsg = { ok: false, text: this._t.meter_bad };
+      this._schedule(true);
+      return;
+    }
+    try {
+      await this._call("number", "set_value", { entity_id: entity, value });
+      input.value = "";
+      this._meterMsg = { ok: true, text: this._t.meter_saved };
+    } catch (err) {
+      this._meterMsg = { ok: false, text: err?.message || String(err) };
+    }
+    this._schedule(true);
   }
 
   _toggleControl(entity, turnOn) {
@@ -282,6 +319,10 @@ class HeatWisePanel extends HTMLElement {
     else if (!this._houses.length) body = `<div class="empty">${esc(t.no_house)}</div>`;
     else body = this._renderHouse(this._house);
 
+    // keep what is being typed in the meter field across re-renders
+    const typing = this.shadowRoot.querySelector("#meter");
+    const kept = typing ? { v: typing.value, f: this.shadowRoot.activeElement === typing } : null;
+
     this.shadowRoot.innerHTML = `<style>${CSS}</style>
       <div class="toolbar">
         <ha-menu-button></ha-menu-button>
@@ -295,6 +336,11 @@ class HeatWisePanel extends HTMLElement {
     if (menu) {
       menu.hass = this._hass;
       menu.narrow = this._narrow;
+    }
+    const meter = this.shadowRoot.querySelector("#meter");
+    if (meter && kept) {
+      meter.value = kept.v;
+      if (kept.f) meter.focus();
     }
   }
 
@@ -456,8 +502,16 @@ class HeatWisePanel extends HTMLElement {
     };
     const periods = ["today", "month", "year"];
     const rows = [];
+    const split = h.hot_water_split && p.hot_water?.today && this._st(p.hot_water.today);
+    const minus = (a, b) => (a && a.v !== null ? { v: Math.max(0, a.v - (b?.v || 0)), unit: a.unit } : a);
     if (p.gas?.today && this._st(p.gas.today)) {
-      rows.push(`<tr><th><ha-icon icon="mdi:meter-gas"></ha-icon>${t.gas_row}</th>${periods.map((x) => cell(val("gas", x), val("gas_cost", x))).join("")}</tr>`);
+      if (split) {
+        rows.push(`<tr><th><ha-icon icon="mdi:radiator"></ha-icon>${t.gas_heating}</th>${periods
+          .map((x) => cell(minus(val("gas", x), val("hot_water", x)), minus(val("gas_cost", x), val("hot_water_cost", x))))
+          .join("")}</tr>`);
+      } else {
+        rows.push(`<tr><th><ha-icon icon="mdi:meter-gas"></ha-icon>${t.gas_row}</th>${periods.map((x) => cell(val("gas", x), val("gas_cost", x))).join("")}</tr>`);
+      }
     }
     if (p.ac_energy?.today && this._st(p.ac_energy.today)) {
       rows.push(`<tr><th><ha-icon icon="mdi:air-conditioner"></ha-icon>${t.ac_power}</th>${periods.map((x) => cell(val("ac_energy", x), val("ac_cost", x))).join("")}</tr>`);
@@ -466,11 +520,31 @@ class HeatWisePanel extends HTMLElement {
     if (p.heating_cost?.today && this._st(p.heating_cost.today)) {
       rows.push(`<tr class="total"><th><ha-icon icon="mdi:cash"></ha-icon>${t.total}</th>${periods.map((x) => cell(null, val("heating_cost", x))).join("")}</tr>`);
     }
+    if (split) {
+      rows.push(`<tr class="extra"><th><ha-icon icon="mdi:water-boiler"></ha-icon>${t.hot_water}</th>${periods.map((x) => cell(val("hot_water", x), val("hot_water_cost", x))).join("")}</tr>`);
+    }
     return `<h2>${t.usage}</h2>
       <div class="card usage"><table>
         <thead><tr><th></th>${periods.map((x) => `<th>${t[x]}</th>`).join("")}</tr></thead>
         <tbody>${rows.join("")}</tbody></table>
-        <div class="note">${t.estimate_note}</div></div>`;
+        <div class="note">${t.estimate_note}</div>
+        ${this._renderMeter(h)}</div>`;
+  }
+
+  _renderMeter(h) {
+    const id = h.entities?.meter_reading;
+    const st = this._st(id);
+    if (!st) return "";
+    const t = this._t;
+    const last = num(st.state);
+    const msg = this._meterMsg ? `<div class="meter-msg ${this._meterMsg.ok ? "ok" : "bad"}">${esc(this._meterMsg.text)}</div>` : "";
+    return `<div class="meter">
+        <label for="meter"><ha-icon icon="mdi:meter-gas-outline"></ha-icon>${t.meter}</label>
+        <input id="meter" type="text" inputmode="decimal" autocomplete="off" data-entity="${id}"
+          placeholder="${last !== null ? esc(last.toFixed(3)) : ""}">
+        <button class="btn primary" data-act="meter" data-entity="${id}">${t.meter_save}</button>
+      </div>
+      <div class="note">${t.meter_hint}</div>${msg}`;
   }
 
   _tile(icon, label, value, sub = "") {
@@ -673,6 +747,17 @@ const CSS = `
   .usage tr.total th, .usage tr.total .amt { color:var(--hw-heat); }
   .usage tr:last-child th, .usage tr:last-child td { border-bottom:none; }
   .usage .note { font-size:12px; color:var(--secondary-text-color); margin-top:10px; }
+  .usage tr.extra th, .usage tr.extra .amt { color:var(--secondary-text-color); font-weight:400; }
+  .usage tr.total th, .usage tr.total td { border-bottom:1px solid var(--divider-color); }
+  .meter { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid var(--divider-color); }
+  .meter label { font-weight:500; display:flex; align-items:center; gap:8px; margin-right:auto; }
+  .meter label ha-icon { --mdc-icon-size:18px; color:var(--primary-color); }
+  .meter input { width:130px; padding:8px 10px; border-radius:8px; border:1px solid var(--divider-color);
+    background:var(--secondary-background-color); color:var(--primary-text-color); font:inherit; text-align:right; }
+  .meter input:focus { outline:none; border-color:var(--primary-color); }
+  .meter-msg { font-size:13px; margin-top:6px; }
+  .meter-msg.ok { color:var(--success-color, #2e7d32); }
+  .meter-msg.bad { color:var(--error-color, #c62828); }
   .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:12px; }
   .zone { display:flex; flex-direction:column; }
   .zone.cold { border-color: color-mix(in srgb, var(--hw-ac) 45%, var(--divider-color)); }
