@@ -148,3 +148,23 @@ def test_explain_languages():
     assert engine.explain("away", "ro") == "Nu e nimeni acasă"
     assert engine.explain("away", "en-GB") == "Nobody home"
     assert engine.explain("unknown_code", "de") == "unknown_code"
+
+
+def test_valve_room_heats_while_acs_heat_and_boiler_fires():
+    # mild day: living on the AC, the kitchen valve room still gets its 21 °C from the boiler
+    states = {
+        "house": ZoneState(room_temp=20.9),  # the wall thermostat reads the warm hall
+        "living": ZoneState(room_temp=20.6),
+        "kitchen": ZoneState(room_temp=18.9),
+    }
+    plan = run([LIVING, KITCHEN], states, HouseState(outdoor_temp=12))
+    assert plan.source == "ac"
+    assert plan.zones["kitchen"].trv_target == 21
+    assert plan.zones["kitchen"].demand
+    assert plan.boiler_target == 21.5  # above the hall reading, so the boiler starts
+
+
+def test_valve_boost_has_a_ceiling():
+    states = {"house": ZoneState(room_temp=24), "kitchen": ZoneState(room_temp=18)}
+    plan = run([KITCHEN], states)
+    assert plan.boiler_target == 22.5  # never more than 1.5 °C above what the room asks

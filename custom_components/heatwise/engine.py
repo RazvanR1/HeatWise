@@ -29,6 +29,10 @@ AC_NONE = "none"
 
 BOOST_DELTA = 2.0
 DEMAND_MARGIN = 0.3
+# How far above its own reading the main thermostat is pushed so it really fires
+# when a valve room far from it needs heat; never more than this above that room.
+DEMAND_BOOST = 0.5
+DEMAND_BOOST_MAX = 1.5
 
 
 @dataclass
@@ -294,7 +298,13 @@ def evaluate(
         plans[cfg.zone_id] = plan
 
     if demand_targets and not warm_off and house_state.enabled:
-        boiler_target = max(boiler_target, max(demand_targets))
+        wanted = max(demand_targets)
+        boiler_target = max(boiler_target, wanted)
+        # The wall thermostat sits in another, often warmer, room: ask a little
+        # above what it reads so the boiler starts, within a safe ceiling.
+        if house_state.room_temp is not None:
+            boost = min(house_state.room_temp + DEMAND_BOOST, wanted + DEMAND_BOOST_MAX)
+            boiler_target = max(boiler_target, round(boost * 2) / 2)
 
     for cfg in zones:
         if cfg.has_trv and cfg.trv_follow_boiler:

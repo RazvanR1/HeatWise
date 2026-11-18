@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.6 - 2026-11-18
+
+- A room with radiator valves that needs heat now really starts the boiler: the main thermostat is asked for a little more than it reads (at most 1.5 °C above the room's target), because it usually sits in another, warmer room. This also works while the ACs heat other rooms
+
 ## 0.7.5 - 2026-11-18
 
 - Fix: turning *HeatWise control* off, removing HeatWise, or removing a room now switches off the air conditioners HeatWise had switched on, instead of leaving them heating at the boosted setpoint
