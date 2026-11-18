@@ -1175,7 +1175,13 @@ class HeatWiseController:
         )
 
     def _mould_floor(self, zone_id: str, sensor: str | None) -> float | None:
-        """Keep a damp room warm: after hours of high humidity, never below a floor."""
+        """Keep a damp room warm: after hours of high humidity, never below a floor.
+
+        A room heated only by air conditioners just gets the message: keeping it
+        warm would mean running an AC at night.
+        """
+        zone = self._zone(zone_id) if zone_id != HOUSE_ZONE_ID else None
+        alert_only = bool(zone and zone.get(CONF_ZONE_ACS) and not zone.get(CONF_ZONE_TRVS))
         if not sensor or not self.config.get(CONF_MOULD, True):
             self._humid_since.pop(zone_id, None)
             self.mould_risk.pop(zone_id, None)
@@ -1194,7 +1200,7 @@ class HeatWiseController:
                         self.notify(
                             notify_text("mould_title", self.language),
                             notify_text(
-                                "mould",
+                                "mould_alert" if alert_only else "mould",
                                 self.language,
                                 rh=round(rh),
                                 zone=self.zone_name(zone_id),
@@ -1207,7 +1213,7 @@ class HeatWiseController:
             elif rh < limit - MOULD_HYSTERESIS:
                 self._humid_since.pop(zone_id, None)
                 self.mould_risk[zone_id] = False
-        return floor if self.mould_risk.get(zone_id) else None
+        return floor if self.mould_risk.get(zone_id) and not alert_only else None
 
     # ------------------------------------------------------------ smart start
     def heat_rate(self, zone_id: str) -> float:

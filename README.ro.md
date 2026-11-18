@@ -1,7 +1,7 @@
 # 🌡️ HeatWise – încălzire inteligentă și hibridă pentru Home Assistant
 
 [![Deschide Home Assistant și arată acest repository în HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
-![Version](https://img.shields.io/badge/version-0.8.0-blue)
+![Version](https://img.shields.io/badge/version-0.8.1-blue)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 ![Local only](https://img.shields.io/badge/cloud-none-success)
 [![Tests](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml/badge.svg)](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml)
@@ -30,7 +30,7 @@ sau AC pe care îl vede Home Assistant, și totul rulează local.
 | 📅 **Urmează programul tău** | Orice ajutor Program (Schedule) sau input boolean: pornit = confort, oprit = eco. Camerele pot avea program propriu sau urmează casa. |
 | ⏰ **Cald la timp** | Învață cât de repede se încălzește fiecare cameră și pornește din timp, ca în cameră să fie deja cald când programul trece pe confort – nu o oră mai târziu. |
 | 🚗 **Încălzește când vii spre casă** | Cu senzorii de distanță din integrarea Proximity a Home Assistant ridică temperatura casei de la „plecat” la confort cât timp cineva conduce spre casă. |
-| 🍄 **Contra mucegaiului** (opțional) | Cu un senzor de umiditate în cameră, după câteva ore de umiditate mare (implicit 65 %) primești un mesaj să aerisești, iar camera nu coboară sub un prag (implicit 19 °C), nici când nu e nimeni acasă. |
+| 🍄 **Contra mucegaiului** (opțional) | Cu un senzor de umiditate în cameră, după câteva ore de umiditate mare (implicit 65 %) primești un mesaj să aerisești, iar camera nu coboară sub un prag (implicit 19 °C), nici când nu e nimeni acasă. O cameră încălzită doar cu AC primește doar mesajul, ca să nu pornească clima noaptea. |
 | ✋ **Respectă modificările manuale** | Schimbi un termostat de mână și modificarea rămâne cât timp alegi tu sau până la următorul pas din program. |
 | 🪟 **Ferestre și zile calde** | O fereastră deschisă coboară camera la protecție la îngheț; peste o temperatură exterioară aleasă de tine, încălzirea se oprește. |
 | 🌬️ **Ferestre deschise fără senzori** | Când temperatura dintr-o cameră scade brusc (implicit 0,8 °C în 10 minute – o cameră încălzită nu se răcește niciodată singură atât de repede), HeatWise presupune că e o fereastră deschisă și reduce încălzirea până se încălzește din nou camera. Folosește doar senzorii de cameră și termostatul de perete. |

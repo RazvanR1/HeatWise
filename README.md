@@ -1,7 +1,7 @@
 # 🌡️ HeatWise – smart hybrid heating for Home Assistant
 
 [![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
-![Version](https://img.shields.io/badge/version-0.8.0-blue)
+![Version](https://img.shields.io/badge/version-0.8.1-blue)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 ![Local only](https://img.shields.io/badge/cloud-none-success)
 [![Tests](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml/badge.svg)](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml)
@@ -32,7 +32,7 @@ AC that Home Assistant can see, and everything runs locally.
 | 🚗 **Warms up when you head home** | With the distance sensors of Home Assistant's Proximity integration it raises the house from away to comfort while someone is driving home. |
 | ✋ **Respects manual changes** | Turn a thermostat by hand and the change is kept for the time you choose, or until the next schedule step. |
 | 🪟 **Windows and warm days** | An open window lowers that room to frost protection; above an outdoor temperature you choose, heating stops. |
-| 🍄 **Against mould** (optional) | With a humidity sensor in a room, hours of high humidity (65 % by default) bring a message to air the room, and the room is not allowed below a floor (19 °C by default), even when nobody is home. |
+| 🍄 **Against mould** (optional) | With a humidity sensor in a room, hours of high humidity (65 % by default) bring a message to air the room, and the room is not allowed below a floor (19 °C by default), even when nobody is home. A room heated only by ACs just gets the message, so no AC runs at night. |
 | 🌬️ **Open windows without sensors** | When a room's temperature drops fast (0.8 °C in 10 minutes by default – a heated room never cools that fast on its own) HeatWise assumes a window is open and lowers the heating until the room warms up again. Uses room sensors and the wall thermostat only. |
 | ⚡ **Boiler power plug** (optional) | A smart plug on the boiler shows when the burner runs and for how long today. |
 | ⛽ **Gas use and cost** | From the burner time and the plug power (a modulating boiler's fan draws more when it burns more) HeatWise estimates the gas used today, this month and this year (m³, kWh, money) and in total, ready for the **Energy** dashboard. Point it at your gas meter index (e.g. your supplier's integration), or type the index from the panel whenever you read the meter, and it learns the real gas use from every reading. |

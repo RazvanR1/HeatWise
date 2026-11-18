@@ -800,3 +800,26 @@ async def test_mould_protection(hass: HomeAssistant, freezer) -> None:
     await hass.async_block_till_done()
     await entry.runtime_data.async_evaluate()
     assert entry.runtime_data.plan.zones["k1"].reason == "away"
+
+
+async def test_mould_in_an_ac_room_only_alerts(hass: HomeAssistant, freezer) -> None:
+    _thermostat(hass, AC, 21, 17, state="off", step=1)
+    hass.states.async_set("person.a", "not_home")
+    hass.states.async_set("sensor.bed_rh", "70", {"unit_of_measurement": "%", "device_class": "humidity"})
+    hass.states.async_set("sensor.bed_t", "17.0", {"unit_of_measurement": "°C", "device_class": "temperature"})
+    entry = await _setup(
+        hass,
+        {
+            **BASE, "persons": ["person.a"], "notify_targets": ["notify.phone"],
+            "zones": [{"zone_id": "b1", "zone_name": "Bedroom", "acs": [AC],
+                       "temp_sensor": "sensor.bed_t", "humidity_sensor": "sensor.bed_rh"}],
+        },
+    )
+    sent = async_mock_service(hass, "notify", "phone")
+    async_mock_service(hass, "climate", "set_temperature")
+    await _tick(hass)
+    freezer.tick(timedelta(hours=2, minutes=1))
+    await entry.runtime_data.async_evaluate()
+    await hass.async_block_till_done()
+    assert entry.runtime_data.plan.zones["b1"].reason == "away"  # no AC at night for mould
+    assert any("Bedroom" in c.data["message"] and "°C" not in c.data["message"] for c in sent)

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.1 - 2026-11-18
+
+- Mould protection in a room heated only by air conditioners now only sends the message to air the room; it no longer keeps the room warm, so no AC is started at night
+
 ## 0.8.0 - 2026-11-18
 
 - Protection against mould: give a room (or the house) a humidity sensor and, after hours of high humidity (65 % for 2 h by default), HeatWise sends a message to air the room and keeps it at least 19 °C until the humidity is 3 % lower, even when nobody is home. All four values can be changed in *Smart start*
