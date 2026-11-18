@@ -51,6 +51,7 @@ from .const import (
     CONF_LANGUAGE,
     CONF_NAME,
     CONF_NOTIFY,
+    CONF_NOTIFY_WINDOW_TARGETS,
     CONF_NOTIFY_OFFLINE,
     CONF_NOTIFY_WINDOW,
     CONF_OUTDOOR,
@@ -264,15 +265,19 @@ def smart_schema(values: dict[str, Any]) -> vol.Schema:
 
 
 def notify_schema(values: dict[str, Any], services: list[str]) -> vol.Schema:
-    options = sorted(set(services) | set(values.get(CONF_NOTIFY, [])))
+    options = sorted(
+        set(services) | set(values.get(CONF_NOTIFY, [])) | set(values.get(CONF_NOTIFY_WINDOW_TARGETS, []))
+    )
+    targets = selector.SelectSelector(
+        selector.SelectSelectorConfig(
+            options=options, multiple=True, custom_value=True,
+            mode=selector.SelectSelectorMode.DROPDOWN,
+        )
+    )
     return vol.Schema(
         {
-            _opt(CONF_NOTIFY, values): selector.SelectSelector(
-                selector.SelectSelectorConfig(
-                    options=options, multiple=True, custom_value=True,
-                    mode=selector.SelectSelectorMode.DROPDOWN,
-                )
-            ),
+            _opt(CONF_NOTIFY, values): targets,
+            _opt(CONF_NOTIFY_WINDOW_TARGETS, values): targets,
             vol.Required(CONF_NOTIFY_WINDOW, default=values.get(CONF_NOTIFY_WINDOW, True)): selector.BooleanSelector(),
             vol.Required(CONF_NOTIFY_OFFLINE, default=values.get(CONF_NOTIFY_OFFLINE, True)): selector.BooleanSelector(),
             vol.Required(CONF_WEEKLY_REPORT, default=values.get(CONF_WEEKLY_REPORT, True)): selector.BooleanSelector(),

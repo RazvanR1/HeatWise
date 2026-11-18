@@ -40,6 +40,7 @@ CONF_ARRIVAL_KM = "arrival_km"
 
 # Notifications
 CONF_NOTIFY = "notify_targets"
+CONF_NOTIFY_WINDOW_TARGETS = "notify_window_targets"
 CONF_NOTIFY_WINDOW = "notify_window"
 CONF_NOTIFY_OFFLINE = "notify_offline"
 CONF_WEEKLY_REPORT = "weekly_report"

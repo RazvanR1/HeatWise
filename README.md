@@ -1,7 +1,7 @@
 # 🌡️ HeatWise – smart hybrid heating for Home Assistant
 
 [![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
-![Version](https://img.shields.io/badge/version-0.7.3-blue)
+![Version](https://img.shields.io/badge/version-0.7.4-blue)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 ![Local only](https://img.shields.io/badge/cloud-none-success)
 [![Tests](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml/badge.svg)](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml)
@@ -118,6 +118,7 @@ two, then disable your old heating automations and turn **HeatWise control** on.
 | Distance to home | — | Proximity distance sensors, one per person; the direction-of-travel sensor of the same entry is used when present. |
 | Warm up when closer than | 15 km | Someone heading home (at least 1 km closer than their farthest point) within this distance brings the house back to comfort, for up to 45 minutes. |
 | Send to | — | Notify services for the messages, e.g. `notify.mobile_app_phone`. |
+| Also send the window alerts to | — | Notify services that get only the window messages, e.g. the phone of someone else at home. |
 | Window opened / device stops responding / weekly report | on / on / on | Which messages to send. The report goes out on Sunday at 19:00. |
 | Heat source | Automatic | Automatic, boiler only or AC only. |
 | Use the AC above | 8 °C | Outdoor threshold used when prices are not known. |

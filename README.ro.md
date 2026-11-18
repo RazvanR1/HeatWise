@@ -1,7 +1,7 @@
 # 🌡️ HeatWise – încălzire inteligentă și hibridă pentru Home Assistant
 
 [![Deschide Home Assistant și arată acest repository în HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
-![Version](https://img.shields.io/badge/version-0.7.3-blue)
+![Version](https://img.shields.io/badge/version-0.7.4-blue)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 ![Local only](https://img.shields.io/badge/cloud-none-success)
 [![Tests](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml/badge.svg)](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml)
@@ -119,6 +119,7 @@ dezactivează automatizările vechi de încălzire și pornește **Control HeatW
 | Distanța până acasă | — | Senzorii de distanță Proximity, câte unul pe persoană; dacă există, se folosește și senzorul de direcție din aceeași intrare. |
 | Încălzește când e mai aproape de | 15 km | Cineva care vine spre casă (cu cel puțin 1 km mai aproape decât cel mai departe punct) în această distanță readuce casa la confort, cel mult 45 de minute. |
 | Trimite la | — | Serviciile de notificare pentru mesaje, de exemplu `notify.mobile_app_telefon`. |
+| Alertele de fereastră se trimit și la | — | Servicii de notificare care primesc doar mesajele de fereastră deschisă, de exemplu telefonul altcuiva din casă. |
 | Fereastră deschisă / dispozitiv care nu răspunde / raport săptămânal | pornit / pornit / pornit | Ce mesaje să trimită. Raportul pleacă duminica la 19:00. |
 | Sursa de căldură | Automat | Automat, doar centrala sau doar AC. |
 | Folosește AC-ul peste | 8 °C | Pragul de temperatură exterioară când prețurile nu sunt cunoscute. |

@@ -227,9 +227,13 @@
         "description": "Mesajele merg la serviciile de notificare alese (aplicația de pe telefon, Telegram, notificare persistentă…).",
         "data": {
           "notify_targets": "Trimite la",
+          "notify_window_targets": "Alertele de fereastră se trimit și la",
           "notify_window": "Fereastră deschisă",
           "notify_offline": "Termostat, cap sau AC care nu mai răspunde (15 min)",
           "weekly_report": "Raport săptămânal duminica la 19:00 (gaz, curent, cost)"
+        },
+        "data_description": {
+          "notify_window_targets": "Aici merg doar mesajele de fereastră deschisă, de exemplu pe telefonul altcuiva din casă. Destinatarii de mai sus primesc toate mesajele."
         }
       }
     },

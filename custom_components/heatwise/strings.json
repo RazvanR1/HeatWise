@@ -227,9 +227,13 @@
         "description": "Messages go to the notify services you pick (the mobile app, Telegram, persistent notification…).",
         "data": {
           "notify_targets": "Send to",
+          "notify_window_targets": "Also send the window alerts to",
           "notify_window": "Window opened",
           "notify_offline": "Thermostat, valve or AC stops responding (15 min)",
           "weekly_report": "Weekly report on Sunday at 19:00 (gas, electricity, cost)"
+        },
+        "data_description": {
+          "notify_window_targets": "Only the window messages go here, e.g. the phone of someone else at home. The targets above get every message."
         }
       }
     },

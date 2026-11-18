@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.4 - 2026-11-18
+
+- New option *Also send the window alerts to*: notify services that get only the window messages, e.g. the phone of someone else at home, while the main targets keep getting every message
+
 ## 0.7.3 - 2026-11-18
 
 - Fix: once the early start begins it now lasts until the schedule turns to comfort. Before, it stopped as soon as the room touched comfort and the main thermostat jumped between comfort and eco every few minutes

@@ -54,6 +54,7 @@ from .const import (
     CONF_LANGUAGE,
     CONF_NAME,
     CONF_NOTIFY,
+    CONF_NOTIFY_WINDOW_TARGETS,
     CONF_NOTIFY_OFFLINE,
     CONF_NOTIFY_WINDOW,
     CONF_OUTDOOR,
@@ -1241,8 +1242,9 @@ class HeatWiseController:
         )
 
     # ----------------------------------------------------------- notifications
-    async def notify(self, title: str, message: str) -> None:
-        for target in self.config.get(CONF_NOTIFY, []):
+    async def notify(self, title: str, message: str, extra: list[str] | None = None) -> None:
+        targets = list(dict.fromkeys(self.config.get(CONF_NOTIFY, []) + (extra or [])))
+        for target in targets:
             domain, _, service = target.partition(".")
             if not service:
                 domain, service = "notify", target
@@ -1262,6 +1264,7 @@ class HeatWiseController:
                     self.notify(
                         notify_text("window_title", self.language),
                         notify_text(key, self.language, zone=self.zone_name(zone_id)),
+                        self.config.get(CONF_NOTIFY_WINDOW_TARGETS, []),
                     )
                 )
 

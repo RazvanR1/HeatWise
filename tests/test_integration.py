@@ -705,3 +705,30 @@ async def test_preheat_keeps_going_once_the_room_is_warm(hass: HomeAssistant) ->
     await hass.async_block_till_done()
     await _tick(hass, 60)
     assert entry.runtime_data.plan.house_reason == "preheat"
+
+
+async def test_window_alerts_go_to_the_extra_targets_only(hass: HomeAssistant, freezer) -> None:
+    hass.states.async_set("binary_sensor.window", "off")
+    _thermostat(hass, BOILER, 21, 20.5)
+    entry = await _setup(
+        hass,
+        {
+            **BASE,
+            "boiler_entity": BOILER,
+            "window_sensors": ["binary_sensor.window"],
+            "notify_targets": ["notify.phone"],
+            "notify_window_targets": ["notify.partner"],
+        },
+    )
+    mine = async_mock_service(hass, "notify", "phone")
+    theirs = async_mock_service(hass, "notify", "partner")
+    async_mock_service(hass, "climate", "set_temperature")
+    await _tick(hass)
+    hass.states.async_set("binary_sensor.window", "on")
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(seconds=70))
+    await _tick(hass, 70)
+    assert len(mine) == 1 and len(theirs) == 1
+    await entry.runtime_data.async_send_weekly_report()
+    await hass.async_block_till_done()
+    assert len(mine) == 2 and len(theirs) == 1
