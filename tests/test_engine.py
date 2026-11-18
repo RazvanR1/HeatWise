@@ -189,3 +189,14 @@ def test_valve_keeps_asking_until_the_target_is_reached():
     assert plan.zones["kitchen"].demand and plan.zones["kitchen"].trv_target == 22
     plan = run([KITCHEN], {**home, "kitchen": ZoneState(room_temp=21.0, prev_demand=True)})
     assert not plan.zones["kitchen"].demand and plan.zones["kitchen"].trv_target == 21
+
+
+def test_no_ac_start_just_before_comfort_ends():
+    ac = ZoneConfig("bed", "Bedroom", has_ac=True)
+    states = {"bed": ZoneState(room_temp=19, schedule_on=True, comfort_ending=True)}
+    plan = run([ac], states, HouseState(outdoor_temp=12))
+    assert plan.zones["bed"].ac_action != "heat"
+    # an AC already running keeps going until the end
+    states = {"bed": ZoneState(room_temp=19, schedule_on=True, comfort_ending=True, ac_ours_running=True)}
+    plan = run([ac], states, HouseState(outdoor_temp=12))
+    assert plan.zones["bed"].ac_action == "heat"

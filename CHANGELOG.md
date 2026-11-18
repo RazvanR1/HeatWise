@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.3 - 2026-11-18
+
+- An air conditioner is no longer started in the last 30 minutes of a comfort period (e.g. coming home at 22:40 with comfort until 23:00); one that is already running keeps going until the end
+
 ## 0.8.2 - 2026-11-18
 
 - Fix: a radiator valve whose room needs heat is set 1 °C above the target until the room sensor reaches it. Valves open only well below their own setpoint, so before the boiler could run for a room whose valve stayed closed

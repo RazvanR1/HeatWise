@@ -28,6 +28,7 @@ from homeassistant.util import dt as dt_util
 
 from . import engine
 from .const import (
+    AC_NO_START_MINUTES,
     AC_POWER_MAX_GAP_SECONDS,
     CONF_AC_MIN_OUTDOOR,
     CONF_AC_OFFSET,
@@ -1174,6 +1175,19 @@ class HeatWiseController:
             min_temp=self._mould_floor(zone_id, humidity),
         )
 
+    def _comfort_ending(self, schedule: str | None) -> bool:
+        """True when a schedule that is on turns off within a few minutes."""
+        state = self._state(schedule)
+        if state is None or state.state != "on":
+            return False
+        next_event = state.attributes.get("next_event")
+        if isinstance(next_event, str):
+            next_event = dt_util.parse_datetime(next_event)
+        if not isinstance(next_event, datetime):
+            return False
+        left = dt_util.as_utc(next_event) - dt_util.utcnow()
+        return timedelta(0) <= left <= timedelta(minutes=AC_NO_START_MINUTES)
+
     def _mould_floor(self, zone_id: str, sensor: str | None) -> float | None:
         """Keep a damp room warm: after hours of high humidity, never below a floor.
 
@@ -1431,6 +1445,7 @@ class HeatWiseController:
                 humidity=zone.get(CONF_ZONE_HUMIDITY),
             )
             st.ac_ours_running, st.ac_user_controlled = self._ac_flags(zone)
+            st.comfort_ending = self._comfort_ending(zone.get(CONF_SCHEDULE) or c.get(CONF_SCHEDULE))
             previous = self.plan.zones.get(zid) if self.plan else None
             st.prev_demand = bool(previous and previous.demand)
             states[zid] = st

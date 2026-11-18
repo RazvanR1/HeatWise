@@ -77,6 +77,7 @@ class ZoneState:
     preheat: bool = False
     min_temp: float | None = None  # floor against mould while humidity stays high
     prev_demand: bool = False  # the room was asking for heat at the last evaluation
+    comfort_ending: bool = False  # the schedule leaves comfort within a few minutes
 
 
 @dataclass
@@ -258,9 +259,8 @@ def _ac_action(
     if room is None:
         # No room sensor: let the AC regulate on its own sensor.
         return AC_HEAT, target
-    want = room < target - hybrid.ac_hyst_on or (
-        state.ac_ours_running and room < target + hybrid.ac_hyst_off
-    )
+    start = room < target - hybrid.ac_hyst_on and not state.comfort_ending
+    want = start or (state.ac_ours_running and room < target + hybrid.ac_hyst_off)
     if want:
         return AC_HEAT, target + hybrid.ac_offset
     return (AC_OFF if state.ac_ours_running else AC_NONE), None
