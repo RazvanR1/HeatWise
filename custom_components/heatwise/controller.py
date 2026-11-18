@@ -1431,6 +1431,8 @@ class HeatWiseController:
                 humidity=zone.get(CONF_ZONE_HUMIDITY),
             )
             st.ac_ours_running, st.ac_user_controlled = self._ac_flags(zone)
+            previous = self.plan.zones.get(zid) if self.plan else None
+            st.prev_demand = bool(previous and previous.demand)
             states[zid] = st
 
         house = engine.HouseState(

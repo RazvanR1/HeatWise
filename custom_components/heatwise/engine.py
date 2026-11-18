@@ -32,6 +32,9 @@ DEMAND_MARGIN = 0.3
 # How far above its own reading the main thermostat is pushed so it really fires
 # when a valve room far from it needs heat; never more than this above that room.
 DEMAND_BOOST = 0.5
+# A radiator valve opens only well below its setpoint (its own hysteresis): while the
+# room needs heat its setpoint is raised this much, so the valve really opens.
+TRV_BOOST = 1.0
 DEMAND_BOOST_MAX = 1.5
 
 
@@ -73,6 +76,7 @@ class ZoneState:
     ac_user_controlled: bool = False
     preheat: bool = False
     min_temp: float | None = None  # floor against mould while humidity stays high
+    prev_demand: bool = False  # the room was asking for heat at the last evaluation
 
 
 @dataclass
@@ -294,7 +298,11 @@ def evaluate(
     for cfg in zones:
         st = states.get(cfg.zone_id, ZoneState())
         target, reason = zone_target(cfg, st, house, warm_off, house_schedule)
-        demand = st.room_temp is not None and st.room_temp < target - DEMAND_MARGIN
+        # Ask for heat below target - margin, and keep asking until the target is
+        # reached, so valve and boiler do not flap around the margin.
+        demand = st.room_temp is not None and (
+            st.room_temp < target - DEMAND_MARGIN or (st.prev_demand and st.room_temp < target)
+        )
         zone_on_ac = source == SOURCE_AC and cfg.has_ac
         ac_action, ac_setpoint = _ac_action(cfg, st, target, source, hybrid)
         plan = ZonePlan(
@@ -309,7 +317,7 @@ def evaluate(
             if zone_on_ac:
                 plan.trv_target = min(target, cfg.temps.away)
             else:
-                plan.trv_target = target
+                plan.trv_target = target + TRV_BOOST if demand else target
                 if demand:
                     demand_targets.append(target)
         plans[cfg.zone_id] = plan

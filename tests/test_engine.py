@@ -126,7 +126,7 @@ def test_ours_ac_switched_off_when_boiler_takes_over():
 def test_trv_zone_demand_raises_boiler():
     states = {"house": ZoneState(schedule_on=False), "kitchen": ZoneState(room_temp=17, schedule_on=True)}
     plan = run([KITCHEN], states)
-    assert plan.zones["kitchen"].trv_target == 21
+    assert plan.zones["kitchen"].trv_target == 22  # boosted so the valve opens
     assert plan.zones["kitchen"].demand
     assert plan.boiler_target == 21
 
@@ -159,7 +159,7 @@ def test_valve_room_heats_while_acs_heat_and_boiler_fires():
     }
     plan = run([LIVING, KITCHEN], states, HouseState(outdoor_temp=12))
     assert plan.source == "ac"
-    assert plan.zones["kitchen"].trv_target == 21
+    assert plan.zones["kitchen"].trv_target == 22
     assert plan.zones["kitchen"].demand
     assert plan.boiler_target == 21.5  # above the hall reading, so the boiler starts
 
@@ -179,3 +179,13 @@ def test_mould_floor_keeps_a_damp_room_warm():
     assert engine.zone_target(KITCHEN, ZoneState(min_temp=19), home, False, None) == (21, "home")
     # an open window still wins
     assert engine.zone_target(KITCHEN, ZoneState(window_open=True, min_temp=19), home, False, None)[1] == "window_open"
+
+
+def test_valve_keeps_asking_until_the_target_is_reached():
+    home = {"house": ZoneState(room_temp=21.5)}
+    plan = run([KITCHEN], {**home, "kitchen": ZoneState(room_temp=20.8)})
+    assert not plan.zones["kitchen"].demand and plan.zones["kitchen"].trv_target == 21
+    plan = run([KITCHEN], {**home, "kitchen": ZoneState(room_temp=20.8, prev_demand=True)})
+    assert plan.zones["kitchen"].demand and plan.zones["kitchen"].trv_target == 22
+    plan = run([KITCHEN], {**home, "kitchen": ZoneState(room_temp=21.0, prev_demand=True)})
+    assert not plan.zones["kitchen"].demand and plan.zones["kitchen"].trv_target == 21

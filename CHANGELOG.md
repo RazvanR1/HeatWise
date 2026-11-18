@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.2 - 2026-11-18
+
+- Fix: a radiator valve whose room needs heat is set 1 °C above the target until the room sensor reaches it. Valves open only well below their own setpoint, so before the boiler could run for a room whose valve stayed closed
+- A room keeps asking for heat until it reaches its target, instead of stopping 0.3 °C below it
+
 ## 0.8.1 - 2026-11-18
 
 - Mould protection in a room heated only by air conditioners now only sends the message to air the room; it no longer keeps the room warm, so no AC is started at night
