@@ -8,6 +8,7 @@
           "name": "Nume",
           "boiler_entity": "Termostatul principal (centrala)",
           "house_temp_sensor": "Senzor de temperatură al casei",
+          "house_humidity_sensor": "Senzor de umiditate",
           "outdoor_sensor": "Temperatura de afară (senzor sau vreme)",
           "persons": "Persoane",
           "schedule_entity": "Program (pornit = confort, oprit = eco)",
@@ -23,7 +24,8 @@
           "house_temp_sensor": "Opțional. Fără el se folosește temperatura citită de termostat.",
           "persons": "Opțional. Fără persoane, HeatWise consideră că e cineva acasă.",
           "schedule_entity": "Opțional. Merge cel mai bine un ajutor Program (Schedule). Fără el: confort cât e cineva acasă.",
-          "language": "Automat urmează limba Home Assistant. Panoul și textele de decizie folosesc limba aleasă."
+          "language": "Automat urmează limba Home Assistant. Panoul și textele de decizie folosesc limba aleasă.",
+          "house_humidity_sensor": "Opțional. Cu el HeatWise ține casa caldă contra mucegaiului când umiditatea stă mare."
         }
       },
       "equipment": {
@@ -72,6 +74,7 @@
         "data": {
           "boiler_entity": "Termostatul principal (centrala)",
           "house_temp_sensor": "Senzor de temperatură al casei",
+          "house_humidity_sensor": "Senzor de umiditate",
           "outdoor_sensor": "Temperatura de afară (senzor sau vreme)",
           "persons": "Persoane",
           "schedule_entity": "Program (pornit = confort, oprit = eco)",
@@ -97,7 +100,8 @@
           "language": "Automat urmează limba Home Assistant. Panoul și textele de decizie folosesc limba aleasă.",
           "window_detect": "Merge și fără senzori de fereastră. Folosește doar senzorii de cameră și termostatul de perete, niciodată citirea unui cap termostatic sau a unui AC.",
           "window_drop": "O cameră încălzită se răcește rar cu mai mult de 0,3–0,5 °C în 10 minute; aerul rece de la o fereastră deschisă o face mult mai repede.",
-          "window_hold_minutes": "Încălzirea revine mai devreme imediat ce camera începe să se încălzească din nou (fereastra s-a închis)."
+          "window_hold_minutes": "Încălzirea revine mai devreme imediat ce camera începe să se încălzească din nou (fereastra s-a închis).",
+          "house_humidity_sensor": "Opțional. Cu el HeatWise ține casa caldă contra mucegaiului când umiditatea stă mare."
         }
       },
       "hybrid": {
@@ -160,6 +164,7 @@
         "data": {
           "zone_name": "Numele zonei",
           "temp_sensor": "Senzor de temperatură al camerei",
+          "humidity_sensor": "Senzor de umiditate în cameră",
           "trvs": "Capete termostatice (TRV)",
           "acs": "Aere condiționate",
           "window_sensors": "Senzori de fereastră",
@@ -171,7 +176,8 @@
           "ac_power_sensors": "Senzori de putere AC (opțional)"
         },
         "data_description": {
-          "ac_power_sensors": "Prize inteligente sau contoare cu puterea AC-urilor din cameră. HeatWise numără energia și costul cât încălzesc."
+          "ac_power_sensors": "Prize inteligente sau contoare cu puterea AC-urilor din cameră. HeatWise numără energia și costul cât încălzesc.",
+          "humidity_sensor": "Opțional. Cu el HeatWise ține camera caldă contra mucegaiului când umiditatea stă mare."
         }
       },
       "edit_zone": {
@@ -215,11 +221,16 @@
           "preheat": "Pornește din timp înainte de program",
           "preheat_max_minutes": "Pornește cu cel mult atâtea minute înainte",
           "arrival_sensors": "Distanța până acasă (senzori Proximity)",
-          "arrival_km": "Încălzește când cine vine spre casă e mai aproape de (km)"
+          "arrival_km": "Încălzește când cine vine spre casă e mai aproape de (km)",
+          "mould_protection": "Protecție contra mucegaiului",
+          "mould_humidity": "Umiditate mare de la (%)",
+          "mould_hours": "Timp de cel puțin (ore)",
+          "mould_min_temp": "Atunci ține camera la cel puțin (°C)"
         },
         "data_description": {
           "preheat": "Are nevoie de un helper Program (Schedule). Până măsoară o încălzire, HeatWise presupune 1,5 °C pe oră.",
-          "arrival_sensors": "Câte unul pentru fiecare persoană, de ex. sensor.home_alex_distance. Dacă există, se folosește și senzorul de direcție din aceeași intrare Proximity."
+          "arrival_sensors": "Câte unul pentru fiecare persoană, de ex. sensor.home_alex_distance. Dacă există, se folosește și senzorul de direcție din aceeași intrare Proximity.",
+          "mould_protection": "Are nevoie de senzori de umiditate pe casă sau pe camere. După câteva ore de umiditate mare, HeatWise îți trimite un mesaj să aerisești și nu lasă camera să coboare sub temperatura aleasă, nici când nu e nimeni acasă. Se oprește când umiditatea scade cu 3 %."
         }
       },
       "notify": {

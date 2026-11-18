@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.0 - 2026-11-18
+
+- Protection against mould: give a room (or the house) a humidity sensor and, after hours of high humidity (65 % for 2 h by default), HeatWise sends a message to air the room and keeps it at least 19 °C until the humidity is 3 % lower, even when nobody is home. All four values can be changed in *Smart start*
+- The message goes to the window alert targets too, so whoever is home can open the window
+
 ## 0.7.6 - 2026-11-18
 
 - A room with radiator valves that needs heat now really starts the boiler: the main thermostat is asked for a little more than it reads (at most 1.5 °C above the room's target), because it usually sits in another, warmer room. This also works while the ACs heat other rooms

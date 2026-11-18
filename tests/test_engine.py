@@ -168,3 +168,14 @@ def test_valve_boost_has_a_ceiling():
     states = {"house": ZoneState(room_temp=24), "kitchen": ZoneState(room_temp=18)}
     plan = run([KITCHEN], states)
     assert plan.boiler_target == 22.5  # never more than 1.5 °C above what the room asks
+
+
+def test_mould_floor_keeps_a_damp_room_warm():
+    away = HouseState(anyone_home=False)
+    st = ZoneState(room_temp=17, min_temp=19)
+    assert engine.zone_target(KITCHEN, st, away, False, None) == (19, "mould")
+    # comfort above the floor stays comfort
+    home = HouseState(anyone_home=True)
+    assert engine.zone_target(KITCHEN, ZoneState(min_temp=19), home, False, None) == (21, "home")
+    # an open window still wins
+    assert engine.zone_target(KITCHEN, ZoneState(window_open=True, min_temp=19), home, False, None)[1] == "window_open"

@@ -46,7 +46,12 @@ from .const import (
     CONF_GAS_PRICE,
     CONF_GAS_PRICE_ENTITY,
     CONF_GAS_RATE,
+    CONF_HOUSE_HUMIDITY,
     CONF_HOUSE_SENSOR,
+    CONF_MOULD,
+    CONF_MOULD_HOURS,
+    CONF_MOULD_RH,
+    CONF_MOULD_TEMP,
     CONF_HYBRID_MODE,
     CONF_LANGUAGE,
     CONF_NAME,
@@ -73,6 +78,7 @@ from .const import (
     CONF_ZONE_FOLLOW_BOILER,
     CONF_ZONE_ID,
     CONF_ZONE_NAME,
+    CONF_ZONE_HUMIDITY,
     CONF_ZONE_SENSOR,
     CONF_ZONE_TRVS,
     CONF_ZONES,
@@ -88,6 +94,9 @@ from .const import (
     DEFAULT_FROST,
     DEFAULT_GAS_KWH_PER_M3,
     DEFAULT_OVERRIDE_MINUTES,
+    DEFAULT_MOULD_HOURS,
+    DEFAULT_MOULD_RH,
+    DEFAULT_MOULD_TEMP,
     DEFAULT_PREHEAT_MAX,
     DEFAULT_WINDOW_DROP,
     DEFAULT_WINDOW_DROP_MINUTES,
@@ -121,6 +130,9 @@ CLIMATE = selector.EntitySelector(selector.EntitySelectorConfig(domain="climate"
 CLIMATES = selector.EntitySelector(selector.EntitySelectorConfig(domain="climate", multiple=True))
 TEMP_SENSOR = selector.EntitySelector(
     selector.EntitySelectorConfig(domain="sensor", device_class="temperature")
+)
+HUMIDITY = selector.EntitySelector(
+    selector.EntitySelectorConfig(domain="sensor", device_class="humidity")
 )
 OUTDOOR = selector.EntitySelector(selector.EntitySelectorConfig(domain=["sensor", "weather"]))
 PERSONS = selector.EntitySelector(selector.EntitySelectorConfig(domain="person", multiple=True))
@@ -160,6 +172,7 @@ def house_schema(values: dict[str, Any], with_name: bool) -> vol.Schema:
         {
             _opt(CONF_BOILER, values): CLIMATE,
             _opt(CONF_HOUSE_SENSOR, values): TEMP_SENSOR,
+            _opt(CONF_HOUSE_HUMIDITY, values): HUMIDITY,
             _opt(CONF_OUTDOOR, values): OUTDOOR,
             _opt(CONF_PERSONS, values): PERSONS,
             _opt(CONF_SCHEDULE, values): SCHEDULE,
@@ -260,6 +273,10 @@ def smart_schema(values: dict[str, Any]) -> vol.Schema:
             _req(CONF_PREHEAT_MAX, values, DEFAULT_PREHEAT_MAX): _number(15, 360, 5),
             _opt(CONF_ARRIVAL_SENSORS, values): DISTANCES,
             _req(CONF_ARRIVAL_KM, values, DEFAULT_ARRIVAL_KM): _number(1, 200, 0.5),
+            vol.Required(CONF_MOULD, default=values.get(CONF_MOULD, True)): selector.BooleanSelector(),
+            _req(CONF_MOULD_RH, values, DEFAULT_MOULD_RH): _number(50, 90, 1),
+            _req(CONF_MOULD_HOURS, values, DEFAULT_MOULD_HOURS): _number(0.5, 24, 0.5),
+            _req(CONF_MOULD_TEMP, values, DEFAULT_MOULD_TEMP): _number(12, 24, 0.5),
         }
     )
 
@@ -290,6 +307,7 @@ def zone_schema(values: dict[str, Any]) -> vol.Schema:
         {
             vol.Required(CONF_ZONE_NAME, default=values.get(CONF_ZONE_NAME, "")): selector.TextSelector(),
             _opt(CONF_ZONE_SENSOR, values): TEMP_SENSOR,
+            _opt(CONF_ZONE_HUMIDITY, values): HUMIDITY,
             _opt(CONF_ZONE_TRVS, values): CLIMATES,
             _opt(CONF_ZONE_ACS, values): CLIMATES,
             _opt(CONF_ZONE_AC_POWER, values): POWER_MULTI,

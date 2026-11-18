@@ -72,6 +72,7 @@ class ZoneState:
     ac_ours_running: bool = False
     ac_user_controlled: bool = False
     preheat: bool = False
+    min_temp: float | None = None  # floor against mould while humidity stays high
 
 
 @dataclass
@@ -179,6 +180,9 @@ def decide_source(
     return SOURCE_BOILER, "below_threshold", None, None, None
 
 
+_NO_FLOOR = ("off", "warm_outside", "window_open", "window_drop", "manual")
+
+
 def zone_target(
     cfg: ZoneConfig,
     state: ZoneState,
@@ -187,6 +191,19 @@ def zone_target(
     house_schedule_on: bool | None,
 ) -> tuple[float, str]:
     """Target temperature of a zone and the rule that decided it."""
+    target, reason = _zone_target(cfg, state, house, warm_off, house_schedule_on)
+    if state.min_temp is not None and target < state.min_temp and reason not in _NO_FLOOR:
+        return state.min_temp, "mould"
+    return target, reason
+
+
+def _zone_target(
+    cfg: ZoneConfig,
+    state: ZoneState,
+    house: HouseState,
+    warm_off: bool,
+    house_schedule_on: bool | None,
+) -> tuple[float, str]:
     t = cfg.temps
     if not state.enabled:
         return t.frost, "off"
@@ -331,6 +348,7 @@ REASONS: dict[str, dict[str, str]] = {
         "warm_outside": "Warm outside: heating stopped",
         "window_open": "Window open: heating lowered",
         "window_drop": "Temperature dropped fast: window probably open",
+        "mould": "Humidity is high: kept warm against mould",
         "manual": "Manual temperature",
         "preset_comfort": "Comfort preset",
         "preset_eco": "Eco preset",
@@ -357,6 +375,7 @@ REASONS: dict[str, dict[str, str]] = {
         "warm_outside": "Cald afară: încălzirea e oprită",
         "window_open": "Fereastră deschisă: încălzire redusă",
         "window_drop": "Temperatura a scăzut brusc: probabil fereastră deschisă",
+        "mould": "Umiditate mare: ținută caldă contra mucegaiului",
         "manual": "Temperatură setată manual",
         "preset_comfort": "Mod confort",
         "preset_eco": "Mod eco",

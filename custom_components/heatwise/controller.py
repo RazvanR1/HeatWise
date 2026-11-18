@@ -49,7 +49,12 @@ from .const import (
     CONF_GAS_METER,
     CONF_GAS_PRICE,
     CONF_GAS_PRICE_ENTITY,
+    CONF_HOUSE_HUMIDITY,
     CONF_HOUSE_SENSOR,
+    CONF_MOULD,
+    CONF_MOULD_HOURS,
+    CONF_MOULD_RH,
+    CONF_MOULD_TEMP,
     CONF_HYBRID_MODE,
     CONF_LANGUAGE,
     CONF_NAME,
@@ -76,6 +81,7 @@ from .const import (
     CONF_ZONE_FOLLOW_BOILER,
     CONF_ZONE_ID,
     CONF_ZONE_NAME,
+    CONF_ZONE_HUMIDITY,
     CONF_ZONE_SENSOR,
     CONF_ZONE_TRVS,
     CONF_ZONES,
@@ -92,6 +98,9 @@ from .const import (
     DEFAULT_FROST,
     DEFAULT_GAS_KWH_PER_M3,
     DEFAULT_HEAT_RATE,
+    DEFAULT_MOULD_HOURS,
+    DEFAULT_MOULD_RH,
+    DEFAULT_MOULD_TEMP,
     DEFAULT_OVERRIDE_MINUTES,
     DEFAULT_PREHEAT_MAX,
     DEFAULT_WINDOW_DROP,
@@ -103,6 +112,7 @@ from .const import (
     HOT_WATER_GRACE_SECONDS,
     HOUSE_ZONE_ID,
     LANG_AUTO,
+    MOULD_HYSTERESIS,
     METER_SOURCE_MANUAL,
     METER_SOURCE_SENSOR,
     OFFLINE_MINUTES,
@@ -205,6 +215,8 @@ class HeatWiseController:
         self.arrival = ArrivalWatcher()
         self.house_device_id: str | None = None
         self._preheat_until: dict[str, datetime] = {}
+        self._humid_since: dict[str, datetime] = {}
+        self.mould_risk: dict[str, bool] = {}
         self.preheating: dict[str, bool] = {}
         self._windows_seen: dict[str, bool] = {}
         self.window_detector = WindowDetector()
@@ -408,6 +420,7 @@ class HeatWiseController:
         for key in (
             CONF_BOILER,
             CONF_HOUSE_SENSOR,
+            CONF_HOUSE_HUMIDITY,
             CONF_OUTDOOR,
             CONF_SCHEDULE,
             CONF_GAS_PRICE_ENTITY,
@@ -423,7 +436,7 @@ class HeatWiseController:
             ids.append(ArrivalWatcher.direction_entity(eid))
         ids.extend(c.get(CONF_WINDOWS, []))
         for zone in self.zones:
-            for key in (CONF_ZONE_SENSOR, CONF_SCHEDULE):
+            for key in (CONF_ZONE_SENSOR, CONF_ZONE_HUMIDITY, CONF_SCHEDULE):
                 if zone.get(key):
                     ids.append(zone[key])
             for key in (CONF_ZONE_TRVS, CONF_ZONE_ACS, CONF_WINDOWS, CONF_ZONE_AC_POWER):
@@ -1141,6 +1154,7 @@ class HeatWiseController:
         windows: list[str],
         preheat_schedule: str | None = None,
         comfort: float | None = None,
+        humidity: str | None = None,
     ) -> engine.ZoneState:
         override = self.override_of(zone_id)
         room = self.room_temperature(zone_id)
@@ -1157,7 +1171,43 @@ class HeatWiseController:
             override_temp=override[0] if override else None,
             enabled=self.enabled.get(zone_id, True),
             preheat=preheat,
+            min_temp=self._mould_floor(zone_id, humidity),
         )
+
+    def _mould_floor(self, zone_id: str, sensor: str | None) -> float | None:
+        """Keep a damp room warm: after hours of high humidity, never below a floor."""
+        if not sensor or not self.config.get(CONF_MOULD, True):
+            self._humid_since.pop(zone_id, None)
+            self.mould_risk.pop(zone_id, None)
+            return None
+        rh = _float(self._state(sensor))
+        limit = float(self.config.get(CONF_MOULD_RH, DEFAULT_MOULD_RH))
+        hours = float(self.config.get(CONF_MOULD_HOURS, DEFAULT_MOULD_HOURS))
+        floor = float(self.config.get(CONF_MOULD_TEMP, DEFAULT_MOULD_TEMP))
+        now = dt_util.utcnow()
+        if rh is not None:
+            if rh >= limit:
+                since = self._humid_since.setdefault(zone_id, now)
+                if not self.mould_risk.get(zone_id) and now - since >= timedelta(hours=hours):
+                    self.mould_risk[zone_id] = True
+                    self.hass.async_create_task(
+                        self.notify(
+                            notify_text("mould_title", self.language),
+                            notify_text(
+                                "mould",
+                                self.language,
+                                rh=round(rh),
+                                zone=self.zone_name(zone_id),
+                                hours=f"{hours:g}",
+                                temp=f"{floor:g}",
+                            ),
+                            self.config.get(CONF_NOTIFY_WINDOW_TARGETS, []),
+                        )
+                    )
+            elif rh < limit - MOULD_HYSTERESIS:
+                self._humid_since.pop(zone_id, None)
+                self.mould_risk[zone_id] = False
+        return floor if self.mould_risk.get(zone_id) else None
 
     # ------------------------------------------------------------ smart start
     def heat_rate(self, zone_id: str) -> float:
@@ -1350,6 +1400,7 @@ class HeatWiseController:
                 c.get(CONF_SCHEDULE),
                 c.get(CONF_WINDOWS, []),
                 comfort=house_temps.comfort,
+                humidity=c.get(CONF_HOUSE_HUMIDITY),
             )
         }
         zone_cfgs: list[engine.ZoneConfig] = []
@@ -1371,6 +1422,7 @@ class HeatWiseController:
                 zone.get(CONF_WINDOWS, []),
                 preheat_schedule=zone.get(CONF_SCHEDULE) or c.get(CONF_SCHEDULE),
                 comfort=self._zone_temps(zone).comfort,
+                humidity=zone.get(CONF_ZONE_HUMIDITY),
             )
             st.ac_ours_running, st.ac_user_controlled = self._ac_flags(zone)
             states[zid] = st

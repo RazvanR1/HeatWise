@@ -769,3 +769,34 @@ async def test_removing_heatwise_switches_its_acs_off(hass: HomeAssistant) -> No
     await hass.config_entries.async_remove(entry.entry_id)
     await hass.async_block_till_done()
     assert AC in [c.data["entity_id"] for c in off]
+
+
+async def test_mould_protection(hass: HomeAssistant, freezer) -> None:
+    _thermostat(hass, BOILER, 18, 18.5)
+    _thermostat(hass, "climate.kitchen_valve", 18, 18.0)
+    hass.states.async_set("person.a", "not_home")
+    hass.states.async_set("sensor.kitchen_rh", "70", {"unit_of_measurement": "%", "device_class": "humidity"})
+    hass.states.async_set("sensor.kitchen_t", "18.0", {"unit_of_measurement": "°C", "device_class": "temperature"})
+    entry = await _setup(
+        hass,
+        {
+            **BASE, "boiler_entity": BOILER, "persons": ["person.a"], "notify_targets": ["notify.phone"],
+            "zones": [{"zone_id": "k1", "zone_name": "Kitchen", "trvs": ["climate.kitchen_valve"],
+                       "temp_sensor": "sensor.kitchen_t", "humidity_sensor": "sensor.kitchen_rh", "trv_follow_boiler": False}],
+        },
+    )
+    sent = async_mock_service(hass, "notify", "phone")
+    async_mock_service(hass, "climate", "set_temperature")
+    await _tick(hass)
+    plan = entry.runtime_data.plan
+    assert plan.zones["k1"].reason == "away"
+    freezer.tick(timedelta(hours=2, minutes=1))
+    await entry.runtime_data.async_evaluate()
+    await hass.async_block_till_done()
+    plan = entry.runtime_data.plan
+    assert plan.zones["k1"].target == 19 and plan.zones["k1"].reason == "mould"
+    assert any("Kitchen" in c.data["message"] for c in sent)
+    hass.states.async_set("sensor.kitchen_rh", "60", {"unit_of_measurement": "%", "device_class": "humidity"})
+    await hass.async_block_till_done()
+    await entry.runtime_data.async_evaluate()
+    assert entry.runtime_data.plan.zones["k1"].reason == "away"

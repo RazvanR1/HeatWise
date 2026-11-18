@@ -1,7 +1,7 @@
 # 🌡️ HeatWise – smart hybrid heating for Home Assistant
 
 [![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
-![Version](https://img.shields.io/badge/version-0.7.6-blue)
+![Version](https://img.shields.io/badge/version-0.8.0-blue)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 ![Local only](https://img.shields.io/badge/cloud-none-success)
 [![Tests](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml/badge.svg)](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml)
@@ -32,6 +32,7 @@ AC that Home Assistant can see, and everything runs locally.
 | 🚗 **Warms up when you head home** | With the distance sensors of Home Assistant's Proximity integration it raises the house from away to comfort while someone is driving home. |
 | ✋ **Respects manual changes** | Turn a thermostat by hand and the change is kept for the time you choose, or until the next schedule step. |
 | 🪟 **Windows and warm days** | An open window lowers that room to frost protection; above an outdoor temperature you choose, heating stops. |
+| 🍄 **Against mould** (optional) | With a humidity sensor in a room, hours of high humidity (65 % by default) bring a message to air the room, and the room is not allowed below a floor (19 °C by default), even when nobody is home. |
 | 🌬️ **Open windows without sensors** | When a room's temperature drops fast (0.8 °C in 10 minutes by default – a heated room never cools that fast on its own) HeatWise assumes a window is open and lowers the heating until the room warms up again. Uses room sensors and the wall thermostat only. |
 | ⚡ **Boiler power plug** (optional) | A smart plug on the boiler shows when the burner runs and for how long today. |
 | ⛽ **Gas use and cost** | From the burner time and the plug power (a modulating boiler's fan draws more when it burns more) HeatWise estimates the gas used today, this month and this year (m³, kWh, money) and in total, ready for the **Energy** dashboard. Point it at your gas meter index (e.g. your supplier's integration), or type the index from the panel whenever you read the meter, and it learns the real gas use from every reading. |
@@ -117,6 +118,7 @@ two, then disable your old heating automations and turn **HeatWise control** on.
 | Start at most this early | 180 min | Upper limit for the early start. |
 | Distance to home | — | Proximity distance sensors, one per person; the direction-of-travel sensor of the same entry is used when present. |
 | Warm up when closer than | 15 km | Someone heading home (at least 1 km closer than their farthest point) within this distance brings the house back to comfort, for up to 45 minutes. |
+| Protect against mould | on, 65 %, 2 h, 19 °C | Needs a humidity sensor on the room (or the house). After that long above that humidity: a message to air the room, and the room stays at least that warm until the humidity is 3 % lower. |
 | Send to | — | Notify services for the messages, e.g. `notify.mobile_app_phone`. |
 | Also send the window alerts to | — | Notify services that get only the window messages, e.g. the phone of someone else at home. |
 | Window opened / device stops responding / weekly report | on / on / on | Which messages to send. The report goes out on Sunday at 19:00. |

@@ -79,6 +79,9 @@ class DecisionSensor(HeatWiseEntity, SensorEntity):
             "window_suspected": [
                 self.controller.zone_name(zid) for zid, on in self.controller.windows_detected.items() if on
             ],
+            "mould_risk": [
+                self.controller.zone_name(zid) for zid, on in self.controller.mould_risk.items() if on
+            ],
             "preheating": [
                 self.controller.zone_name(zid) for zid, on in self.controller.preheating.items() if on
             ],
