@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.2 - 2026-11-18
+
+- Fix: the early start before the schedule no longer turns on air conditioners (it started a bedroom AC at 4 in the morning). ACs warm a room in minutes, so they start at the schedule; the early start is for the boiler and radiator valves
+
 ## 0.7.1 - 2026-11-17
 
 - Fix: the gas (and hot water) of a burner run still in progress was lost when Home Assistant restarted, e.g. after an update. It is now booked when Home Assistant stops, and every 5 minutes during a long run

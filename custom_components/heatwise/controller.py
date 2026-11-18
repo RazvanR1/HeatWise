@@ -1149,6 +1149,11 @@ class HeatWiseController:
         """Start comfort early so the room is warm when the schedule turns on."""
         if not self.config.get(CONF_PREHEAT, True) or comfort is None or room is None:
             return False
+        zone = self._zone(zone_id) if zone_id != HOUSE_ZONE_ID else None
+        if zone and zone.get(CONF_ZONE_ACS):
+            # Air conditioners warm a room in minutes and are loud: never start one
+            # early (e.g. in a bedroom at 4 in the morning), only at the schedule.
+            return False
         state = self._state(schedule)
         if state is None or state.state != "off":
             return False

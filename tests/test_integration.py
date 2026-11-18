@@ -670,3 +670,23 @@ async def test_long_burner_run_is_booked_as_it_goes(hass: HomeAssistant, freezer
 
 def hass_storage_values(hass, entry):
     return entry.runtime_data._store_data()
+
+
+async def test_no_preheat_for_air_conditioners(hass: HomeAssistant) -> None:
+    _thermostat(hass, AC, 21, 18, state="off", step=1)
+    hass.states.async_set("sensor.bed", "18", {"unit_of_measurement": "°C", "device_class": "temperature"})
+    soon = dt_util.utcnow() + timedelta(minutes=40)
+    hass.states.async_set("schedule.bed", "off", {"next_event": soon})
+    entry = await _setup(
+        hass,
+        {
+            **BASE,
+            "zones": [{"zone_id": "b1", "zone_name": "Bedroom", "acs": [AC], "temp_sensor": "sensor.bed",
+                       "schedule_entity": "schedule.bed"}],
+        },
+    )
+    async_mock_service(hass, "climate", "set_temperature")
+    async_mock_service(hass, "climate", "set_hvac_mode")
+    await _tick(hass)
+    assert entry.runtime_data.preheating["b1"] is False
+    assert entry.runtime_data.plan.zones["b1"].reason == "schedule_eco"
