@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.3 - 2026-11-18
+
+- Fix: once the early start begins it now lasts until the schedule turns to comfort. Before, it stopped as soon as the room touched comfort and the main thermostat jumped between comfort and eco every few minutes
+
 ## 0.7.2 - 2026-11-18
 
 - Fix: the early start before the schedule no longer turns on air conditioners (it started a bedroom AC at 4 in the morning). ACs warm a room in minutes, so they start at the schedule; the early start is for the boiler and radiator valves

@@ -690,3 +690,18 @@ async def test_no_preheat_for_air_conditioners(hass: HomeAssistant) -> None:
     await _tick(hass)
     assert entry.runtime_data.preheating["b1"] is False
     assert entry.runtime_data.plan.zones["b1"].reason == "schedule_eco"
+
+
+async def test_preheat_keeps_going_once_the_room_is_warm(hass: HomeAssistant) -> None:
+    _thermostat(hass, BOILER, 18, 20.5)
+    soon = dt_util.utcnow() + timedelta(minutes=20)
+    hass.states.async_set("schedule.heat", "off", {"next_event": soon})
+    entry = await _setup(hass, {**BASE, "boiler_entity": BOILER, "schedule_entity": "schedule.heat"})
+    async_mock_service(hass, "climate", "set_temperature")
+    await _tick(hass)
+    assert entry.runtime_data.plan.house_reason == "preheat"
+    # the room reaches comfort before the schedule: stay on comfort, no flip to eco
+    _thermostat(hass, BOILER, 21, 21.2)
+    await hass.async_block_till_done()
+    await _tick(hass, 60)
+    assert entry.runtime_data.plan.house_reason == "preheat"

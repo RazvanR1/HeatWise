@@ -203,6 +203,7 @@ class HeatWiseController:
         self._heat_sessions: dict[str, tuple[datetime, float, float]] = {}
         self.arrival = ArrivalWatcher()
         self.house_device_id: str | None = None
+        self._preheat_until: dict[str, datetime] = {}
         self.preheating: dict[str, bool] = {}
         self._windows_seen: dict[str, bool] = {}
         self.window_detector = WindowDetector()
@@ -1156,19 +1157,30 @@ class HeatWiseController:
             return False
         state = self._state(schedule)
         if state is None or state.state != "off":
+            self._preheat_until.pop(zone_id, None)
             return False
         next_event = state.attributes.get("next_event")
         if isinstance(next_event, str):
             next_event = dt_util.parse_datetime(next_event)
         if not isinstance(next_event, datetime):
             return False
-        return preheat_due(
-            dt_util.as_utc(next_event),
-            dt_util.utcnow(),
+        next_on = dt_util.as_utc(next_event)
+        now = dt_util.utcnow()
+        # Once started, keep warming until the schedule turns on: stopping as soon as
+        # the room touches comfort made the target jump comfort/eco every few minutes.
+        if self._preheat_until.get(zone_id) == next_on and now < next_on:
+            return True
+        self._preheat_until.pop(zone_id, None)
+        due = preheat_due(
+            next_on,
+            now,
             comfort - room,
             self.heat_rate(zone_id),
             float(self.config.get(CONF_PREHEAT_MAX, DEFAULT_PREHEAT_MAX)),
         )
+        if due:
+            self._preheat_until[zone_id] = next_on
+        return due
 
     def _heat_driver(self, zone_id: str) -> str | None:
         """The device whose target drives the heating of a zone (for learning)."""
