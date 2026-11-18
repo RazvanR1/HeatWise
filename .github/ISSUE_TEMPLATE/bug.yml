@@ -1,0 +1,73 @@
+name: 🐞 Bug report / Problemă
+description: Something in HeatWise doesn't work as expected. / Ceva nu merge cum ar trebui.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this! You can write in **English or Romanian**.
+        Mulțumesc că raportezi! Poți scrie în **engleză sau română**.
+  - type: input
+    id: version
+    attributes:
+      label: HeatWise version / Versiunea HeatWise
+      description: HACS / Marketplace → HeatWise, or Settings → Devices & services → HeatWise (e.g. 0.7.4)
+      placeholder: "0.7.4"
+    validations:
+      required: true
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version / Versiunea Home Assistant
+      description: Settings → About
+      placeholder: "2026.11.2"
+    validations:
+      required: true
+  - type: checkboxes
+    id: setup
+    attributes:
+      label: What heats your home? / Cu ce se încălzește casa?
+      options:
+        - label: Boiler with a thermostat / Centrală cu termostat
+        - label: Radiator valves (TRV) / Capete termostatice
+        - label: Air conditioners / Aer condiționat
+        - label: Boiler power plug / Priză cu măsurare pe centrală
+  - type: dropdown
+    id: control
+    attributes:
+      label: HeatWise control
+      options:
+        - "On – HeatWise drives the devices / Pornit – HeatWise conduce aparatele"
+        - "Off – observe only / Oprit – doar observă"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened? / Ce s-a întâmplat?
+      description: |
+        When, which room, what HeatWise did. The *Decision* sensor text helps a lot.
+        Când, în ce cameră, ce a făcut HeatWise. Textul senzorului *Decizie* ajută mult.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect? / Ce te așteptai să se întâmple?
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics / Diagnostic
+      description: |
+        Settings → Devices & services → HeatWise → ⋮ → **Download diagnostics**, then drag the file here. It contains no passwords.
+        Setări → Dispozitive și servicii → HeatWise → ⋮ → **Descarcă diagnosticul**, apoi trage fișierul aici. Nu conține parole.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Loguri
+      description: |
+        Settings → System → Logs, lines that mention `heatwise`.
+        Setări → Sistem → Jurnale, rândurile care conțin `heatwise`.
+      render: shell

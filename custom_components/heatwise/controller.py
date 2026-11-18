@@ -287,6 +287,10 @@ class HeatWiseController:
         self.enabled = data.get("enabled", {})
         self.overrides = {k: tuple(v) for k, v in data.get("overrides", {}).items()}
         self.ac_owned = set(data.get("ac_owned", []))
+        configured = {ac for zone in self.zones for ac in zone.get(CONF_ZONE_ACS, [])}
+        if self.ac_owned - configured:
+            # The room of an AC HeatWise had switched on was removed in the options.
+            self.hass.async_create_task(self.async_release_acs(self.ac_owned - configured))
         self.ac_blocked = data.get("ac_blocked", {})
         self.previous_source = data.get("source", engine.SOURCE_BOILER)
         self.previous_warm_off = data.get("warm_off", False)
@@ -947,7 +951,21 @@ class HeatWiseController:
     def set_control(self, enabled: bool) -> None:
         self.control_enabled = enabled
         self._save()
+        if not enabled:
+            # Hand the house back as it was: an AC HeatWise switched on would
+            # otherwise keep heating at its boosted setpoint with nobody in charge.
+            self.hass.async_create_task(self.async_release_acs())
         self.async_schedule_evaluate(delay=0)
+
+    async def async_release_acs(self, only: set[str] | None = None) -> None:
+        """Turn off the air conditioners HeatWise switched on and forget them."""
+        for entity_id in sorted(only if only is not None else self.ac_owned):
+            state = self._state(entity_id)
+            if state is not None and state.state not in ("off", STATE_UNAVAILABLE, STATE_UNKNOWN):
+                self._last_sent[entity_id] = (0.0, dt_util.utcnow())
+                await self._call("climate", "turn_off", {ATTR_ENTITY_ID: entity_id})
+            self.ac_owned.discard(entity_id)
+        self._save()
 
     @callback
     def set_use_ac(self, enabled: bool) -> None:

@@ -62,4 +62,13 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
     from .const import STORAGE_VERSION
 
-    await Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry.entry_id}").async_remove()
+    store = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry.entry_id}")
+    data = await store.async_load() or {}
+    # Do not leave behind an air conditioner HeatWise switched on.
+    for entity_id in data.get("ac_owned", []):
+        state = hass.states.get(entity_id)
+        if state is not None and state.state not in ("off", "unavailable", "unknown"):
+            await hass.services.async_call(
+                "climate", "turn_off", {"entity_id": entity_id}, blocking=True
+            )
+    await store.async_remove()

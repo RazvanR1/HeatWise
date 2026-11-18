@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.5 - 2026-11-18
+
+- Fix: turning *HeatWise control* off, removing HeatWise, or removing a room now switches off the air conditioners HeatWise had switched on, instead of leaving them heating at the boosted setpoint
+- HeatWise has its own icon and logo in Home Assistant 2026.3+ (light and dark)
+- Bug report and idea forms on GitHub, in English and Romanian
+
 ## 0.7.4 - 2026-11-18
 
 - New option *Also send the window alerts to*: notify services that get only the window messages, e.g. the phone of someone else at home, while the main targets keep getting every message

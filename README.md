@@ -1,7 +1,7 @@
 # 🌡️ HeatWise – smart hybrid heating for Home Assistant
 
 [![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
-![Version](https://img.shields.io/badge/version-0.7.4-blue)
+![Version](https://img.shields.io/badge/version-0.7.5-blue)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 ![Local only](https://img.shields.io/badge/cloud-none-success)
 [![Tests](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml/badge.svg)](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml)
@@ -38,7 +38,7 @@ AC that Home Assistant can see, and everything runs locally.
 | 🚿 **Hot water apart** | On a combi boiler, burner time while the thermostat is not calling for heat is a shower or a tap. HeatWise counts it apart, so the cost of heating is the cost of heating. |
 | 🔌 **AC electricity and total cost** | With a power sensor on each AC (a smart plug), it counts the energy and cost the ACs use **while heating** – today, this month, this year – and adds it to the gas for the total cost of heating. |
 | 🔔 **Notifications** (optional) | To your phone, Telegram or any notify service: a window left open, a thermostat, valve or AC that stopped responding, and a weekly report on Sunday evening with the gas, electricity and cost of the week. |
-| 👀 **Observe-only mode** | Turn off *HeatWise control* and it shows what it would do without touching any device. Ideal for trying it next to your current setup. |
+| 👀 **Observe-only mode** | Turn off *HeatWise control* and it shows what it would do without touching any device. Ideal for trying it next to your current setup. Turning it off (or removing HeatWise) also switches off the ACs HeatWise had switched on. |
 | 🧠 **Explains itself** | A *Decision* sensor and the panel say in plain words why the house is at the temperature it is. |
 | 🖥️ **Sidebar panel** | The house and every room, presets and temperatures, the heat source, burner time, the cost of heat from gas and from the AC, and the last 24 hours. |
 | 🔧 **Knows your devices** (optional) | Tell it the boiler and the AC from their datasheet or energy label – a few numbers, no model database to go out of date – and the cost comparison and gas estimate use your real efficiencies. Anything you leave empty gets an average for that kind of device. |

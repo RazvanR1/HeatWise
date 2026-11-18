@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 870 256">
+  <g transform="translate(0,0)"><defs>
+    <linearGradient id="flame" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#e8462a"/>
+      <stop offset="1" stop-color="#ffab40"/>
+    </linearGradient>
+    <linearGradient id="cool" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#3b9fe8"/>
+      <stop offset="1" stop-color="#5cc6f5"/>
+    </linearGradient>
+  </defs>
+  <!-- house -->
+  <path d="M128 20 L236 108 Q244 115 236 122 L222 122 L222 224 Q222 236 210 236 L46 236 Q34 236 34 224 L34 122 L20 122 Q12 115 20 108 Z"
+        fill="none" stroke="#eceff1" stroke-width="16" stroke-linejoin="round"/>
+  <!-- flame -->
+  <path d="M128 78 C150 108 172 128 172 162 C172 190 152 210 128 210 C104 210 84 190 84 162 C84 140 96 126 106 112 C108 130 116 140 126 144 C122 120 116 100 128 78 Z"
+        fill="url(#flame)"/>
+  <!-- airflow (AC) -->
+  <path d="M98 186 Q113 176 128 186 T158 186" fill="none" stroke="url(#cool)" stroke-width="10" stroke-linecap="round"/>
+</g>
+  <text x="276" y="166" font-family="DejaVu Sans" font-weight="bold" font-size="104" fill="#eceff1">Heat<tspan fill="#ff8a3d">Wise</tspan></text>
+</svg>

@@ -1,7 +1,7 @@
 # 🌡️ HeatWise – încălzire inteligentă și hibridă pentru Home Assistant
 
 [![Deschide Home Assistant și arată acest repository în HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
-![Version](https://img.shields.io/badge/version-0.7.4-blue)
+![Version](https://img.shields.io/badge/version-0.7.5-blue)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 ![Local only](https://img.shields.io/badge/cloud-none-success)
 [![Tests](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml/badge.svg)](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml)
@@ -38,7 +38,7 @@ sau AC pe care îl vede Home Assistant, și totul rulează local.
 | 🚿 **Apa caldă separat** | La o centrală mixtă, timpul în care arzătorul merge fără ca termostatul să ceară căldură e un duș sau un robinet. HeatWise îl numără separat, așa că costul încălzirii e chiar costul încălzirii. |
 | 🔌 **Curentul AC-urilor și costul total** | Cu un senzor de putere pe fiecare AC (o priză inteligentă), numără energia și costul AC-urilor **cât încălzesc** – azi, luna aceasta, anul acesta – și le adună cu gazul pentru costul total al încălzirii. |
 | 🔔 **Notificări** (opțional) | Pe telefon, pe Telegram sau la orice serviciu de notificare: o fereastră lăsată deschisă, un termostat, cap sau AC care nu mai răspunde și un raport săptămânal duminică seara cu gazul, curentul și costul săptămânii. |
-| 👀 **Mod doar observă** | Oprești *Control HeatWise* și îți arată ce ar face, fără să atingă vreun aparat. Ideal ca să-l încerci lângă ce ai acum. |
+| 👀 **Mod doar observă** | Oprești *Control HeatWise* și îți arată ce ar face, fără să atingă vreun aparat. Ideal ca să-l încerci lângă ce ai acum. Când îl oprești (sau ștergi HeatWise), oprește și AC-urile pe care le pornise el. |
 | 🧠 **Se explică** | Senzorul *Decizie* și panoul spun pe înțelesul tuturor de ce casa are temperatura pe care o are. |
 | 🖥️ **Panou în bara laterală** | Casa și fiecare cameră, preseturi și temperaturi, sursa de căldură, cât a mers arzătorul, cât costă căldura din gaz și din AC și ultimele 24 de ore. |
 | 🔧 **Îți cunoaște aparatele** (opțional) | Îi spui centrala și clima din fișa tehnică sau de pe eticheta energetică – câteva cifre, fără o bază de date de modele care să se învechească – și comparația de cost și estimarea gazului folosesc randamentele tale reale. Ce lași gol primește media pentru tipul de aparat. |

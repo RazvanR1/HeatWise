@@ -732,3 +732,40 @@ async def test_window_alerts_go_to_the_extra_targets_only(hass: HomeAssistant, f
     await entry.runtime_data.async_send_weekly_report()
     await hass.async_block_till_done()
     assert len(mine) == 2 and len(theirs) == 1
+
+
+async def _ac_running(hass: HomeAssistant):
+    _thermostat(hass, BOILER, 21, 19.5)
+    _thermostat(hass, AC, 21, 18, state="off", step=1)
+    hass.states.async_set("sensor.outdoor", "12", {"unit_of_measurement": "°C", "device_class": "temperature"})
+    hass.states.async_set("sensor.living", "18.5", {"unit_of_measurement": "°C", "device_class": "temperature"})
+    entry = await _setup(
+        hass,
+        {
+            "boiler_entity": BOILER, "outdoor_sensor": "sensor.outdoor", **BASE,
+            "zones": [{"zone_id": "l1", "zone_name": "Living", "acs": [AC], "temp_sensor": "sensor.living", "trv_follow_boiler": False}],
+        },
+    )
+    async_mock_service(hass, "climate", "set_temperature")
+    async_mock_service(hass, "climate", "set_hvac_mode")
+    off = async_mock_service(hass, "climate", "turn_off")
+    await _tick(hass)
+    assert AC in entry.runtime_data.ac_owned
+    _thermostat(hass, AC, 23, 18, state="heat", step=1)
+    await hass.async_block_till_done()
+    return entry, off
+
+
+async def test_turning_control_off_hands_the_acs_back(hass: HomeAssistant) -> None:
+    entry, off = await _ac_running(hass)
+    entry.runtime_data.set_control(False)
+    await hass.async_block_till_done()
+    assert [c.data["entity_id"] for c in off] == [AC]
+    assert not entry.runtime_data.ac_owned
+
+
+async def test_removing_heatwise_switches_its_acs_off(hass: HomeAssistant) -> None:
+    entry, off = await _ac_running(hass)
+    await hass.config_entries.async_remove(entry.entry_id)
+    await hass.async_block_till_done()
+    assert AC in [c.data["entity_id"] for c in off]

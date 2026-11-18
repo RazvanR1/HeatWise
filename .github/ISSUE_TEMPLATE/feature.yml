@@ -1,0 +1,21 @@
+name: 💡 Idea / Idee
+description: Suggest a new feature or an improvement. / Propune o funcție nouă sau o îmbunătățire.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would you like HeatWise to do? / Ce ai vrea să facă HeatWise?
+      description: Describe the situation in your home, not only the solution. / Descrie situația din casa ta, nu doar soluția.
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example / Exemplu
+      description: e.g. "When the bathroom heater runs, …" / ex. „Când merge aeroterma din baie, …”
+  - type: textarea
+    id: devices
+    attributes:
+      label: Your devices / Aparatele tale
+      description: Boiler, thermostat, valves, ACs (brand / model). / Centrală, termostat, capete, clime (marcă / model).

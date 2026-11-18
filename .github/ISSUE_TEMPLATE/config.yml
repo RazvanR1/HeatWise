@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📖 Documentation / Documentație
+    url: https://github.com/RazvanR1/HeatWise#readme
+    about: Installation, setup and all options. / Instalare, configurare și toate opțiunile.
+  - name: ☕ Support the project / Susține proiectul
+    url: https://buymeacoffee.com/razvanr1
+    about: HeatWise is free – a coffee keeps it going. / HeatWise e gratuit – o cafea îl ține în viață.
