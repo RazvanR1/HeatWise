@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.5 - 2026-11-19
+
+- New setting in *House*: the highest temperature the main thermostat may be turned up to when a room with a radiator valve needs heat. Without valves on the other radiators, heating a cold valve room warms the whole house; with this limit the valve room stays a little cooler instead
+
 ## 0.8.4 - 2026-11-19
 
 - Airing advice: with an outdoor humidity sensor, HeatWise compares the water in the air inside and outside and sends "good time to air" when a room is above 60 % and the outside air is clearly drier (at most every 6 hours, 8:00–22:00, when someone is home). It goes to the window alert targets too. The rooms are also shown in the decision sensor (`good_time_to_air`)

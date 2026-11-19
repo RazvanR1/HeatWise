@@ -54,6 +54,7 @@ from .const import (
     CONF_MOULD_TEMP,
     CONF_HYBRID_MODE,
     CONF_BOILER_WHILE_AC,
+    CONF_VALVE_CEILING,
     CONF_OUTDOOR_HUMIDITY,
     CONF_VENTILATE,
     CONF_LANGUAGE,
@@ -192,6 +193,7 @@ def house_schema(values: dict[str, Any], with_name: bool) -> vol.Schema:
             {
                 _opt(CONF_WARM_OFF, values): _temp(10, 30),
                 _req(CONF_AWAY_DELAY, values, DEFAULT_AWAY_DELAY): _number(0, 240, 1),
+            _opt(CONF_VALVE_CEILING, values): _temp(5, 30),
                 _req(CONF_OVERRIDE_MINUTES, values, DEFAULT_OVERRIDE_MINUTES): _number(10, 1440, 5),
                 vol.Required(
                     CONF_WINDOW_DETECT, default=values.get(CONF_WINDOW_DETECT, True)

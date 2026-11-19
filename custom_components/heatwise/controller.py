@@ -29,6 +29,7 @@ from homeassistant.util import dt as dt_util
 from . import engine
 from .const import (
     CONF_BOILER_WHILE_AC,
+    CONF_VALVE_CEILING,
     CONF_OUTDOOR_HUMIDITY,
     CONF_VENTILATE,
     STARTUP_GRACE_SECONDS,
@@ -1175,6 +1176,9 @@ class HeatWiseController:
             electricity_price=self._price(CONF_EL_PRICE_ENTITY, CONF_EL_PRICE),
             boiler_efficiency=self.equipment.boiler_efficiency,
             cop_at_7=self.equipment.cop_at_7,
+            valve_ceiling=(
+                float(c[CONF_VALVE_CEILING]) if c.get(CONF_VALVE_CEILING) is not None else None
+            ),
             boiler_while_ac=(
                 float(c[CONF_BOILER_WHILE_AC]) if c.get(CONF_BOILER_WHILE_AC) is not None else None
             ),

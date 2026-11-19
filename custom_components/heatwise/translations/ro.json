@@ -93,7 +93,8 @@
           "window_detect": "Detectează ferestre deschise din scăderea bruscă a temperaturii",
           "window_drop": "Scăderea de temperatură care înseamnă fereastră (°C)",
           "window_drop_minutes": "…în cel mult (minute)",
-          "window_hold_minutes": "Ține încălzirea redusă cel mult (minute)"
+          "window_hold_minutes": "Ține încălzirea redusă cel mult (minute)",
+          "valve_rooms_house_max": "Temperatura maximă pentru restul casei când o cameră cu valvă cere căldură (°C)"
         },
         "data_description": {
           "boiler_entity": "Opțional. Lasă gol pentru o casă încălzită doar cu aer condiționat.",
@@ -105,7 +106,8 @@
           "window_drop": "O cameră încălzită se răcește rar cu mai mult de 0,3–0,5 °C în 10 minute; aerul rece de la o fereastră deschisă o face mult mai repede.",
           "window_hold_minutes": "Încălzirea revine mai devreme imediat ce camera începe să se încălzească din nou (fereastra s-a închis).",
           "house_humidity_sensor": "Opțional. Cu el HeatWise ține casa caldă contra mucegaiului când umiditatea stă mare.",
-          "outdoor_humidity_sensor": "Opțional. Cu el HeatWise îți spune când deschiderea geamurilor ar usca aerul din casă."
+          "outdoor_humidity_sensor": "Opțional. Cu el HeatWise îți spune când deschiderea geamurilor ar usca aerul din casă.",
+          "valve_rooms_house_max": "Când o cameră cu valvă termostatată e rece, HeatWise ridică termostatul centralei ca ea să pornească, iar toate caloriferele fără valvă încălzesc și ele. Cu o valoare aici, termostatul nu e ridicat niciodată peste ea: camera cu valvă poate rămâne puțin mai rece, dar restul casei nu se supraîncălzește. Gol: fără limită."
         }
       },
       "hybrid": {

@@ -28,6 +28,7 @@ VENT_MIN_DIFF = 2.0  # g/m³ drier outside than inside before airing is worth it
 VENT_COOLDOWN_HOURS = 6
 VENT_HOURS = (8, 22)  # local hours in which a hint may be sent
 CONF_BOILER_WHILE_AC = "boiler_while_ac"
+CONF_VALVE_CEILING = "valve_rooms_house_max"
 CONF_OUTDOOR = "outdoor_sensor"
 CONF_PERSONS = "persons"
 CONF_AWAY_DELAY = "away_delay"

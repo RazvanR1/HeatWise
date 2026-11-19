@@ -1,7 +1,7 @@
 # 🌡️ HeatWise – smart hybrid heating for Home Assistant
 
 [![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
-![Version](https://img.shields.io/badge/version-0.8.4-blue)
+![Version](https://img.shields.io/badge/version-0.8.5-blue)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 ![Local only](https://img.shields.io/badge/cloud-none-success)
 [![Tests](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml/badge.svg)](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml)
@@ -127,6 +127,7 @@ two, then disable your old heating automations and turn **HeatWise control** on.
 | Heat source | Automatic | Automatic, boiler only or AC only. |
 | Use the AC above | 8 °C | Outdoor threshold used when prices are not known. |
 | Never use the AC below | −15 °C | Below this the boiler always heats. |
+| Highest temperature for the rest of the house when a valve room needs heat | no limit | Radiators without a valve heat whenever the boiler runs for a valve room. With a value, the main thermostat is never turned up above it: the valve room may stay a little cooler instead. |
 | Rest of the house while the ACs heat | away temperature | What the main thermostat keeps while the ACs heat their rooms. Never above what the house schedule asks for. |
 | AC setpoint above the target | 2 °C | How much higher HeatWise sets the AC so it heats with power; regulation is on the room sensor. |
 | Gas / electricity price | — | A sensor or a fixed number, per kWh. Gas billed in m³: 1 m³ ≈ 10.5 kWh. |

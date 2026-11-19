@@ -99,6 +99,9 @@ class HybridConfig:
     # what the rest of the house is kept at while the air conditioners heat
     # (None: the away level)
     boiler_while_ac: float | None = None
+    # the highest the main thermostat may be pushed so a valve room gets heat
+    # (None: no limit); the rest of the house warms up too when it is
+    valve_ceiling: float | None = None
 
 
 @dataclass
@@ -328,12 +331,16 @@ def evaluate(
 
     if demand_targets and not warm_off and house_state.enabled:
         wanted = max(demand_targets)
-        boiler_target = max(boiler_target, wanted)
+        push = wanted
         # The wall thermostat sits in another, often warmer, room: ask a little
         # above what it reads so the boiler starts, within a safe ceiling.
         if house_state.room_temp is not None:
             boost = min(house_state.room_temp + DEMAND_BOOST, wanted + DEMAND_BOOST_MAX)
-            boiler_target = max(boiler_target, round(boost * 2) / 2)
+            push = max(push, round(boost * 2) / 2)
+        if hybrid.valve_ceiling is not None:
+            # the user would rather have the valve room a little cool than the whole house warm
+            push = min(push, hybrid.valve_ceiling)
+        boiler_target = max(boiler_target, push)
 
     for cfg in zones:
         if cfg.has_trv and cfg.trv_follow_boiler:

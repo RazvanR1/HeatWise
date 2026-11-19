@@ -93,7 +93,8 @@
           "window_detect": "Guess open windows from a fast temperature drop",
           "window_drop": "Temperature drop that means a window (°C)",
           "window_drop_minutes": "…within (minutes)",
-          "window_hold_minutes": "Keep the heating low for at most (minutes)"
+          "window_hold_minutes": "Keep the heating low for at most (minutes)",
+          "valve_rooms_house_max": "Highest temperature for the rest of the house when a valve room needs heat (°C)"
         },
         "data_description": {
           "boiler_entity": "Optional. Leave empty for a house heated only by air conditioners.",
@@ -105,7 +106,8 @@
           "window_drop": "A heated room rarely cools more than 0.3–0.5 °C in 10 minutes; cold air from an open window does much more.",
           "window_hold_minutes": "Heating comes back earlier as soon as the room starts warming up again (window closed).",
           "house_humidity_sensor": "Optional. With it HeatWise keeps the house warm against mould when the humidity stays high.",
-          "outdoor_humidity_sensor": "Optional. With it HeatWise tells you when opening the windows would dry the house."
+          "outdoor_humidity_sensor": "Optional. With it HeatWise tells you when opening the windows would dry the house.",
+          "valve_rooms_house_max": "When a room with a radiator valve is cold, HeatWise turns the main thermostat up so the boiler starts, and every radiator without a valve heats too. With a value here the main thermostat is never turned up above it: the valve room may stay a little cooler, the rest of the house does not get too warm. Empty: no limit."
         }
       },
       "hybrid": {

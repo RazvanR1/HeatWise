@@ -1,7 +1,7 @@
 # 🌡️ HeatWise – încălzire inteligentă și hibridă pentru Home Assistant
 
 [![Deschide Home Assistant și arată acest repository în HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
-![Version](https://img.shields.io/badge/version-0.8.4-blue)
+![Version](https://img.shields.io/badge/version-0.8.5-blue)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 ![Local only](https://img.shields.io/badge/cloud-none-success)
 [![Tests](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml/badge.svg)](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml)
@@ -128,6 +128,7 @@ dezactivează automatizările vechi de încălzire și pornește **Control HeatW
 | Sursa de căldură | Automat | Automat, doar centrala sau doar AC. |
 | Folosește AC-ul peste | 8 °C | Pragul de temperatură exterioară când prețurile nu sunt cunoscute. |
 | Nu folosi niciodată AC-ul sub | −15 °C | Sub această temperatură încălzește mereu centrala. |
+| Temperatura maximă pentru restul casei când o cameră cu valvă cere căldură | fără limită | Caloriferele fără valvă încălzesc ori de câte ori centrala merge pentru o cameră cu valvă. Cu o valoare, termostatul principal nu e ridicat niciodată peste ea: camera cu valvă poate rămâne puțin mai rece. |
 | Restul casei cât încălzesc AC-urile | temperatura de plecat | Ce ține termostatul principal cât AC-urile încălzesc camerele lor. Niciodată peste ce cere programul casei. |
 | Cu cât setează AC-ul peste țintă | 2 °C | Cât de sus setează HeatWise AC-ul ca să încălzească cu putere; reglajul se face după senzorul din cameră. |
 | Preț gaz / curent | — | Un senzor sau o valoare fixă, per kWh. Gaz facturat în m³: 1 m³ ≈ 10,5 kWh. |

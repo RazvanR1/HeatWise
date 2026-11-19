@@ -216,3 +216,17 @@ def test_boiler_level_while_the_acs_heat():
     hs_away = e.HouseState(anyone_home=False, outdoor_temp=12)
     plan = e.evaluate(house, [living], states, hs_away, e.HybridConfig(mode=e.HYBRID_AC, boiler_while_ac=18))
     assert plan.boiler_target == 17  # never above what the house asks for
+
+
+def test_valve_room_does_not_overheat_the_house_past_the_ceiling():
+    from custom_components.heatwise import engine as e
+
+    house = e.ZoneConfig("house", "Home", e.Temps(comfort=21, eco=19, away=17), is_house=True)
+    kitchen = e.ZoneConfig("k", "Kitchen", e.Temps(comfort=21, eco=19, away=17), has_trv=True, trv_follow_boiler=False)
+    states = {"house": e.ZoneState(room_temp=22.0, schedule_on=True), "k": e.ZoneState(room_temp=20.6, schedule_on=True)}
+    hs = e.HouseState(anyone_home=True, outdoor_temp=5)
+    plan = e.evaluate(house, [kitchen], states, hs, e.HybridConfig(mode=e.HYBRID_BOILER))
+    assert plan.boiler_target == 22.5  # no limit: pushed above the warm wall thermostat
+    plan = e.evaluate(house, [kitchen], states, hs, e.HybridConfig(mode=e.HYBRID_BOILER, valve_ceiling=21))
+    assert plan.boiler_target == 21
+    assert plan.zones["k"].trv_target == 22  # the valve still opens if the boiler runs for the house
