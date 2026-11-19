@@ -1,7 +1,7 @@
 # 🌡️ HeatWise – smart hybrid heating for Home Assistant
 
 [![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
-![Version](https://img.shields.io/badge/version-0.8.3-blue)
+![Version](https://img.shields.io/badge/version-0.8.4-blue)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 ![Local only](https://img.shields.io/badge/cloud-none-success)
 [![Tests](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml/badge.svg)](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml)
@@ -32,6 +32,7 @@ AC that Home Assistant can see, and everything runs locally.
 | 🚗 **Warms up when you head home** | With the distance sensors of Home Assistant's Proximity integration it raises the house from away to comfort while someone is driving home. |
 | ✋ **Respects manual changes** | Turn a thermostat by hand and the change is kept for the time you choose, or until the next schedule step. |
 | 🪟 **Windows and warm days** | An open window lowers that room to frost protection; above an outdoor temperature you choose, heating stops. |
+| 🌬️ **Airing advice** (optional) | With an outdoor humidity sensor, HeatWise compares how much water the air holds inside and outside and tells you when opening the windows for a few minutes would really dry a humid room. |
 | 🍄 **Against mould** (optional) | With a humidity sensor in a room, hours of high humidity (65 % by default) bring a message to air the room, and the room is not allowed below a floor (19 °C by default), even when nobody is home. A room heated only by ACs just gets the message, so no AC runs at night. |
 | 🌬️ **Open windows without sensors** | When a room's temperature drops fast (0.8 °C in 10 minutes by default – a heated room never cools that fast on its own) HeatWise assumes a window is open and lowers the heating until the room warms up again. Uses room sensors and the wall thermostat only. |
 | ⚡ **Boiler power plug** (optional) | A smart plug on the boiler shows when the burner runs and for how long today. |
@@ -118,6 +119,7 @@ two, then disable your old heating automations and turn **HeatWise control** on.
 | Start at most this early | 180 min | Upper limit for the early start. |
 | Distance to home | — | Proximity distance sensors, one per person; the direction-of-travel sensor of the same entry is used when present. |
 | Warm up when closer than | 15 km | Someone heading home (at least 1 km closer than their farthest point) within this distance brings the house back to comfort, for up to 45 minutes. |
+| Tell me when it is a good time to air | on | Needs the outdoor humidity sensor. A room above 60 % and clearly drier air outside: a message, at most every 6 hours, 8:00–22:00, when someone is home. |
 | Protect against mould | on, 65 %, 2 h, 19 °C | Needs a humidity sensor on the room (or the house). After that long above that humidity: a message to air the room, and the room stays at least that warm until the humidity is 3 % lower. |
 | Send to | — | Notify services for the messages, e.g. `notify.mobile_app_phone`. |
 | Also send the window alerts to | — | Notify services that get only the window messages, e.g. the phone of someone else at home. |
@@ -125,6 +127,7 @@ two, then disable your old heating automations and turn **HeatWise control** on.
 | Heat source | Automatic | Automatic, boiler only or AC only. |
 | Use the AC above | 8 °C | Outdoor threshold used when prices are not known. |
 | Never use the AC below | −15 °C | Below this the boiler always heats. |
+| Rest of the house while the ACs heat | away temperature | What the main thermostat keeps while the ACs heat their rooms. Never above what the house schedule asks for. |
 | AC setpoint above the target | 2 °C | How much higher HeatWise sets the AC so it heats with power; regulation is on the room sensor. |
 | Gas / electricity price | — | A sensor or a fixed number, per kWh. Gas billed in m³: 1 m³ ≈ 10.5 kWh. |
 | Boiler type / maximum heating power / efficiency (%) | unknown / — / — | From the datasheet. Efficiency is the full-load value against Hi (e.g. 97.5 %); empty = average for the type (condensing 0.93, conventional 0.84, unknown 0.92, against the kWh on the gas bill). The power gives the first guess of gas per burner hour. |

@@ -80,3 +80,20 @@ def test_weekly_report_in_romanian() -> None:
     assert "Gaz: 23,4 m³ (66,10 RON)" in text or "Gaz: 23,5 m³ (66,10 RON)" in text
     assert "Total încălzire: 68,42 RON" in text
     assert "Săptămâna trecută: 70,00 RON" in text
+
+
+def test_absolute_humidity():
+    from custom_components.heatwise.smart import absolute_humidity
+
+    assert abs(absolute_humidity(20, 50) - 8.6) < 0.1
+    assert abs(absolute_humidity(0, 100) - 4.85) < 0.1
+
+
+def test_rooms_to_air():
+    from custom_components.heatwise.smart import rooms_to_air
+
+    rooms = {"Kitchen": (21, 65), "Living": (21, 50), "Bedroom": (None, 70)}
+    names, outside, inside = rooms_to_air(rooms, 5, 80, 60, 2)
+    assert names == ["Kitchen"] and outside < inside
+    assert rooms_to_air(rooms, 20, 90, 60, 2)[0] == []
+    assert rooms_to_air(rooms, None, 80, 60, 2)[0] == []

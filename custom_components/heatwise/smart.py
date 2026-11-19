@@ -5,6 +5,7 @@ Kept free of Home Assistant state handling where possible so they are easy to te
 
 from __future__ import annotations
 
+import math
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -40,6 +41,38 @@ def preheat_due(
     rate = min(max(rate, HEAT_RATE_MIN), HEAT_RATE_MAX)
     lead = min(gap / rate * 60, max_minutes)
     return minutes_left <= lead
+
+
+def absolute_humidity(temp: float, rh: float) -> float:
+    """Grams of water per m³ of air at ``temp`` °C and ``rh`` % relative humidity."""
+    saturation = 6.112 * math.exp(17.67 * temp / (temp + 243.5))  # hPa
+    return saturation * rh * 2.1674 / (273.15 + temp)
+
+
+def rooms_to_air(
+    rooms: dict[str, tuple[float | None, float | None]],
+    outdoor_temp: float | None,
+    outdoor_rh: float | None,
+    min_rh: float,
+    min_diff: float,
+) -> tuple[list[str], float | None, float | None]:
+    """Humid rooms that airing would dry, with outdoor and worst indoor g/m³.
+
+    ``rooms`` maps a name to (temperature, relative humidity).
+    """
+    if outdoor_temp is None or outdoor_rh is None:
+        return [], None, None
+    outside = absolute_humidity(outdoor_temp, outdoor_rh)
+    names: list[str] = []
+    worst: float | None = None
+    for name, (temp, rh) in rooms.items():
+        if temp is None or rh is None or rh < min_rh:
+            continue
+        inside = absolute_humidity(temp, rh)
+        if inside - outside >= min_diff:
+            names.append(name)
+            worst = inside if worst is None else max(worst, inside)
+    return names, round(outside, 1), (round(worst, 1) if worst is not None else None)
 
 
 def learn_rate(previous: float | None, gain: float, hours: float) -> float | None:
@@ -189,6 +222,8 @@ MESSAGES = {
         "mould_title": "HeatWise: high humidity",
         "mould": "Humidity has been {rh}% in {zone} for {hours} h. Air the room for 5–10 minutes with the window wide open. It will not drop below {temp} °C until the humidity is down.",
         "mould_alert": "Humidity has been {rh}% in {zone} for {hours} h. Air the room for 5–10 minutes with the window wide open.",
+        "vent_title": "HeatWise: good time to air",
+        "vent": "The air outside is drier ({out} g/m³ of water against {inside} g/m³ in {zones}). Open the windows wide for 5–10 minutes, then close them.",
         "report_title": "HeatWise: this week",
         "report_gas": "Gas: {m3} m³ ({cost} {cur}), burner {hours} h",
         "report_gas_heating": "Gas for heating: {m3} m³ ({cost} {cur}), burner {hours} h",
@@ -210,6 +245,8 @@ MESSAGES = {
         "mould_title": "HeatWise: umiditate mare",
         "mould": "Umiditatea e {rh}% în {zone} de {hours} h. Aerisește 5–10 minute cu geamul larg deschis. Camera nu coboară sub {temp} °C până scade umiditatea.",
         "mould_alert": "Umiditatea e {rh}% în {zone} de {hours} h. Aerisește 5–10 minute cu geamul larg deschis.",
+        "vent_title": "HeatWise: e momentul să aerisești",
+        "vent": "Aerul de afară e mai uscat ({out} g/m³ apă față de {inside} g/m³ în {zones}). Deschide geamurile larg 5–10 minute, apoi închide-le.",
         "report_title": "HeatWise: săptămâna aceasta",
         "report_gas": "Gaz: {m3} m³ ({cost} {cur}), arzătorul a mers {hours} h",
         "report_gas_heating": "Gaz pentru încălzire: {m3} m³ ({cost} {cur}), arzătorul a mers {hours} h",

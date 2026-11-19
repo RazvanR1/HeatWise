@@ -200,3 +200,19 @@ def test_no_ac_start_just_before_comfort_ends():
     states = {"bed": ZoneState(room_temp=19, schedule_on=True, comfort_ending=True, ac_ours_running=True)}
     plan = run([ac], states, HouseState(outdoor_temp=12))
     assert plan.zones["bed"].ac_action == "heat"
+
+
+def test_boiler_level_while_the_acs_heat():
+    from custom_components.heatwise import engine as e
+
+    house = e.ZoneConfig("house", "Home", e.Temps(comfort=21, eco=19, away=17), is_house=True)
+    living = e.ZoneConfig("l1", "Living", e.Temps(comfort=21, eco=17, away=17), has_ac=True)
+    states = {"house": e.ZoneState(room_temp=19, schedule_on=False), "l1": e.ZoneState(room_temp=18, schedule_on=True)}
+    hs = e.HouseState(anyone_home=True, outdoor_temp=12)
+    plan = e.evaluate(house, [living], states, hs, e.HybridConfig(mode=e.HYBRID_AC))
+    assert plan.boiler_target == 17
+    plan = e.evaluate(house, [living], states, hs, e.HybridConfig(mode=e.HYBRID_AC, boiler_while_ac=18))
+    assert plan.boiler_target == 18
+    hs_away = e.HouseState(anyone_home=False, outdoor_temp=12)
+    plan = e.evaluate(house, [living], states, hs_away, e.HybridConfig(mode=e.HYBRID_AC, boiler_while_ac=18))
+    assert plan.boiler_target == 17  # never above what the house asks for

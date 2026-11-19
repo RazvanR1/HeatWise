@@ -82,6 +82,7 @@ class DecisionSensor(HeatWiseEntity, SensorEntity):
             "mould_risk": [
                 self.controller.zone_name(zid) for zid, on in self.controller.mould_risk.items() if on
             ],
+            "good_time_to_air": self.controller.air_rooms,
             "preheating": [
                 self.controller.zone_name(zid) for zid, on in self.controller.preheating.items() if on
             ],

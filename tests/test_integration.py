@@ -823,3 +823,89 @@ async def test_mould_in_an_ac_room_only_alerts(hass: HomeAssistant, freezer) -> 
     await hass.async_block_till_done()
     assert entry.runtime_data.plan.zones["b1"].reason == "away"  # no AC at night for mould
     assert any("Bedroom" in c.data["message"] and "°C" not in c.data["message"] for c in sent)
+
+
+def _rh(hass, entity_id, value):
+    hass.states.async_set(entity_id, str(value), {"unit_of_measurement": "%", "device_class": "humidity"})
+
+
+def _t(hass, entity_id, value):
+    hass.states.async_set(entity_id, str(value), {"unit_of_measurement": "°C", "device_class": "temperature"})
+
+
+async def test_humidity_wait_survives_a_restart(hass: HomeAssistant, freezer) -> None:
+    _thermostat(hass, "climate.kitchen_valve", 18, 18.0)
+    _rh(hass, "sensor.kitchen_rh", 70)
+    _t(hass, "sensor.kitchen_t", 18.0)
+    entry = await _setup(
+        hass,
+        {
+            **BASE,
+            "zones": [{"zone_id": "k1", "zone_name": "Kitchen", "trvs": ["climate.kitchen_valve"],
+                       "temp_sensor": "sensor.kitchen_t", "humidity_sensor": "sensor.kitchen_rh", "trv_follow_boiler": False}],
+        },
+    )
+    async_mock_service(hass, "climate", "set_temperature")
+    await entry.runtime_data.async_evaluate()
+    freezer.tick(timedelta(hours=1, minutes=10))
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(minutes=55))
+    await entry.runtime_data.async_evaluate()
+    assert entry.runtime_data.mould_risk.get("k1") is True
+
+
+async def test_waits_for_sensors_after_start(hass: HomeAssistant, freezer) -> None:
+    _thermostat(hass, BOILER, 18, 18.5)
+    entry = await _setup(hass, {**BASE, "boiler_entity": BOILER, "outdoor_sensor": "sensor.outdoor"})
+    async_mock_service(hass, "climate", "set_temperature")
+    c = entry.runtime_data
+    await c.async_evaluate()
+    assert c.plan is None  # the outdoor sensor has not reported yet
+    _t(hass, "sensor.outdoor", 5)
+    await hass.async_block_till_done()
+    await c.async_evaluate()
+    assert c.plan is not None and c.plan.source_reason != "no_outdoor"
+
+
+async def test_gives_up_waiting_for_a_dead_sensor(hass: HomeAssistant, freezer) -> None:
+    _thermostat(hass, BOILER, 18, 18.5)
+    entry = await _setup(hass, {**BASE, "boiler_entity": BOILER, "outdoor_sensor": "sensor.outdoor"})
+    async_mock_service(hass, "climate", "set_temperature")
+    freezer.tick(timedelta(seconds=130))
+    await entry.runtime_data.async_evaluate()
+    assert entry.runtime_data.plan is not None
+
+
+async def test_suggests_airing_when_outside_is_drier(hass: HomeAssistant, freezer) -> None:
+    from datetime import datetime
+
+    freezer.move_to(datetime(2026, 11, 19, 12, tzinfo=dt_util.get_default_time_zone()))
+    _thermostat(hass, "climate.kitchen_valve", 21, 21.0)
+    _rh(hass, "sensor.kitchen_rh", 70)
+    _t(hass, "sensor.kitchen_t", 21.0)
+    _t(hass, "sensor.outdoor", 5)
+    _rh(hass, "sensor.outdoor_rh", 80)
+    entry = await _setup(
+        hass,
+        {
+            **BASE, "outdoor_sensor": "sensor.outdoor", "outdoor_humidity_sensor": "sensor.outdoor_rh",
+            "notify_targets": ["notify.phone"],
+            "zones": [{"zone_id": "k1", "zone_name": "Kitchen", "trvs": ["climate.kitchen_valve"],
+                       "temp_sensor": "sensor.kitchen_t", "humidity_sensor": "sensor.kitchen_rh", "trv_follow_boiler": False}],
+        },
+    )
+    sent = async_mock_service(hass, "notify", "phone")
+    async_mock_service(hass, "climate", "set_temperature")
+    c = entry.runtime_data
+    await c.async_evaluate()
+    await hass.async_block_till_done()
+    assert c.air_rooms == ["Kitchen"]
+    assert len(sent) == 1 and "Kitchen" in sent[0].data["message"]
+    await c.async_evaluate()  # not again for hours
+    await hass.async_block_till_done()
+    assert len(sent) == 1
+    _rh(hass, "sensor.outdoor_rh", 100)
+    _t(hass, "sensor.outdoor", 18)
+    await c.async_evaluate()
+    assert c.air_rooms == []  # warm damp air outside would not help

@@ -96,6 +96,9 @@ class HybridConfig:
     ac_offset: float = 2.0
     ac_hyst_on: float = 0.5
     ac_hyst_off: float = 0.3
+    # what the rest of the house is kept at while the air conditioners heat
+    # (None: the away level)
+    boiler_while_ac: float | None = None
 
 
 @dataclass
@@ -287,9 +290,10 @@ def evaluate(
     )
     house_schedule = house_state.schedule_on
 
-    # Base boiler target: the house target, or the away level while the ACs heat.
+    # Base boiler target: the house target, or a lower level while the ACs heat.
     if source == SOURCE_AC:
-        boiler_target = min(house_target, house_cfg.temps.away)
+        keep = hybrid.boiler_while_ac if hybrid.boiler_while_ac is not None else house_cfg.temps.away
+        boiler_target = min(house_target, max(keep, house_cfg.temps.frost))
     else:
         boiler_target = house_target
 

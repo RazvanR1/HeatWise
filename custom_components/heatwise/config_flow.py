@@ -53,6 +53,9 @@ from .const import (
     CONF_MOULD_RH,
     CONF_MOULD_TEMP,
     CONF_HYBRID_MODE,
+    CONF_BOILER_WHILE_AC,
+    CONF_OUTDOOR_HUMIDITY,
+    CONF_VENTILATE,
     CONF_LANGUAGE,
     CONF_NAME,
     CONF_NOTIFY,
@@ -174,6 +177,7 @@ def house_schema(values: dict[str, Any], with_name: bool) -> vol.Schema:
             _opt(CONF_HOUSE_SENSOR, values): TEMP_SENSOR,
             _opt(CONF_HOUSE_HUMIDITY, values): HUMIDITY,
             _opt(CONF_OUTDOOR, values): OUTDOOR,
+            _opt(CONF_OUTDOOR_HUMIDITY, values): HUMIDITY,
             _opt(CONF_PERSONS, values): PERSONS,
             _opt(CONF_SCHEDULE, values): SCHEDULE,
             _opt(CONF_WINDOWS, values): WINDOWS,
@@ -215,6 +219,7 @@ def hybrid_schema(values: dict[str, Any]) -> vol.Schema:
             _req(CONF_AC_THRESHOLD, values, DEFAULT_AC_THRESHOLD): _temp(-20, 25),
             _req(CONF_AC_MIN_OUTDOOR, values, DEFAULT_AC_MIN_OUTDOOR): _temp(-30, 10),
             _req(CONF_AC_OFFSET, values, DEFAULT_AC_OFFSET): _number(0, 6, 0.5),
+            _opt(CONF_BOILER_WHILE_AC, values): _temp(5, 25),
             _opt(CONF_GAS_PRICE_ENTITY, values): SENSOR,
             _opt(CONF_GAS_PRICE, values): _number(0, 100, "any"),
             _opt(CONF_EL_PRICE_ENTITY, values): SENSOR,
@@ -277,6 +282,7 @@ def smart_schema(values: dict[str, Any]) -> vol.Schema:
             _req(CONF_MOULD_RH, values, DEFAULT_MOULD_RH): _number(50, 90, 1),
             _req(CONF_MOULD_HOURS, values, DEFAULT_MOULD_HOURS): _number(0.5, 24, 0.5),
             _req(CONF_MOULD_TEMP, values, DEFAULT_MOULD_TEMP): _number(12, 24, 0.5),
+            vol.Required(CONF_VENTILATE, default=values.get(CONF_VENTILATE, True)): selector.BooleanSelector(),
         }
     )
 

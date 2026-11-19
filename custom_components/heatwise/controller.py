@@ -28,6 +28,14 @@ from homeassistant.util import dt as dt_util
 
 from . import engine
 from .const import (
+    CONF_BOILER_WHILE_AC,
+    CONF_OUTDOOR_HUMIDITY,
+    CONF_VENTILATE,
+    STARTUP_GRACE_SECONDS,
+    VENT_COOLDOWN_HOURS,
+    VENT_HOURS,
+    VENT_MIN_DIFF,
+    VENT_MIN_RH,
     AC_NO_START_MINUTES,
     AC_POWER_MAX_GAP_SECONDS,
     CONF_AC_MIN_OUTDOOR,
@@ -140,6 +148,7 @@ from .smart import (
     learn_rate,
     notify_text,
     preheat_due,
+    rooms_to_air,
     weekly_report,
 )
 
@@ -218,6 +227,9 @@ class HeatWiseController:
         self._preheat_until: dict[str, datetime] = {}
         self._humid_since: dict[str, datetime] = {}
         self.mould_risk: dict[str, bool] = {}
+        self.air_rooms: list[str] = []
+        self._vent_last: datetime | None = None
+        self._setup_at = dt_util.utcnow()
         self.preheating: dict[str, bool] = {}
         self._windows_seen: dict[str, bool] = {}
         self.window_detector = WindowDetector()
@@ -334,6 +346,15 @@ class HeatWiseController:
         self.last_manual_reading = tuple(manual) if manual else None
         self.last_week = stored.get("last_week")
         self.heat_rates = {k: float(v) for k, v in data.get("heat_rates", {}).items()}
+        # humidity counters survive a restart, so a reboot does not reset the 2 h wait
+        for zid, item in data.get("mould", {}).items():
+            since = dt_util.parse_datetime(item.get("since") or "")
+            if since is not None:
+                self._humid_since[zid] = since
+            if item.get("risk"):
+                self.mould_risk[zid] = True
+        self._vent_last = dt_util.parse_datetime(data.get("vent_last") or "")
+        self._setup_at = dt_util.utcnow()
 
         self._unsubs.append(
             async_track_state_change_event(
@@ -401,6 +422,14 @@ class HeatWiseController:
                 "last_week": self.last_week,
             },
             "heat_rates": self.heat_rates,
+            "mould": {
+                zid: {
+                    "since": self._humid_since[zid].isoformat() if zid in self._humid_since else None,
+                    "risk": bool(self.mould_risk.get(zid)),
+                }
+                for zid in set(self._humid_since) | {z for z, on in self.mould_risk.items() if on}
+            },
+            "vent_last": self._vent_last.isoformat() if self._vent_last else None,
             "periods_version": 2,
             "gas": {
                 "total_m3": self.gas_total_live,
@@ -1146,6 +1175,9 @@ class HeatWiseController:
             electricity_price=self._price(CONF_EL_PRICE_ENTITY, CONF_EL_PRICE),
             boiler_efficiency=self.equipment.boiler_efficiency,
             cop_at_7=self.equipment.cop_at_7,
+            boiler_while_ac=(
+                float(c[CONF_BOILER_WHILE_AC]) if c.get(CONF_BOILER_WHILE_AC) is not None else None
+            ),
         )
 
     def _zone_state(
@@ -1197,8 +1229,9 @@ class HeatWiseController:
         zone = self._zone(zone_id) if zone_id != HOUSE_ZONE_ID else None
         alert_only = bool(zone and zone.get(CONF_ZONE_ACS) and not zone.get(CONF_ZONE_TRVS))
         if not sensor or not self.config.get(CONF_MOULD, True):
-            self._humid_since.pop(zone_id, None)
-            self.mould_risk.pop(zone_id, None)
+            had = self._humid_since.pop(zone_id, None), self.mould_risk.pop(zone_id, None)
+            if any(had):
+                self._save()
             return None
         rh = _float(self._state(sensor))
         limit = float(self.config.get(CONF_MOULD_RH, DEFAULT_MOULD_RH))
@@ -1207,9 +1240,13 @@ class HeatWiseController:
         now = dt_util.utcnow()
         if rh is not None:
             if rh >= limit:
-                since = self._humid_since.setdefault(zone_id, now)
+                if zone_id not in self._humid_since:
+                    self._humid_since[zone_id] = now
+                    self._save()
+                since = self._humid_since[zone_id]
                 if not self.mould_risk.get(zone_id) and now - since >= timedelta(hours=hours):
                     self.mould_risk[zone_id] = True
+                    self._save()
                     self.hass.async_create_task(
                         self.notify(
                             notify_text("mould_title", self.language),
@@ -1225,7 +1262,8 @@ class HeatWiseController:
                         )
                     )
             elif rh < limit - MOULD_HYSTERESIS:
-                self._humid_since.pop(zone_id, None)
+                if self._humid_since.pop(zone_id, None) or self.mould_risk.get(zone_id):
+                    self._save()
                 self.mould_risk[zone_id] = False
         return floor if self.mould_risk.get(zone_id) and not alert_only else None
 
@@ -1338,6 +1376,49 @@ class HeatWiseController:
                 domain, service = "notify", target
             await self._call(domain, service, {"title": title, "message": message})
 
+    def _humidity_of(self, zone_id: str) -> float | None:
+        if zone_id == HOUSE_ZONE_ID:
+            return _float(self._state(self.config.get(CONF_HOUSE_HUMIDITY)))
+        zone = self._zone(zone_id)
+        return _float(self._state(zone.get(CONF_ZONE_HUMIDITY))) if zone else None
+
+    @callback
+    def _check_ventilation(self, states: dict[str, engine.ZoneState]) -> None:
+        """Suggest airing when the outside air would dry the humid rooms."""
+        c = self.config
+        if not c.get(CONF_VENTILATE, True) or not c.get(CONF_OUTDOOR_HUMIDITY):
+            self.air_rooms = []
+            return
+        rooms = {
+            self.zone_name(zid): (st.room_temp, self._humidity_of(zid))
+            for zid, st in states.items()
+            if not (st.window_open or st.window_detected)
+        }
+        names, outside, inside = rooms_to_air(
+            rooms,
+            self._outdoor(),
+            _float(self._state(c[CONF_OUTDOOR_HUMIDITY])),
+            VENT_MIN_RH,
+            VENT_MIN_DIFF,
+        )
+        self.air_rooms = names
+        if not names or self.anyone_home is False:
+            return
+        now = dt_util.utcnow()
+        if not VENT_HOURS[0] <= dt_util.now().hour < VENT_HOURS[1]:
+            return
+        if self._vent_last and now - self._vent_last < timedelta(hours=VENT_COOLDOWN_HOURS):
+            return
+        self._vent_last = now
+        self._save()
+        self.hass.async_create_task(
+            self.notify(
+                notify_text("vent_title", self.language),
+                notify_text("vent", self.language, out=outside, inside=inside, zones=", ".join(names)),
+                c.get(CONF_NOTIFY_WINDOW_TARGETS, []),
+            )
+        )
+
     @callback
     def _check_windows(self, states: dict[str, engine.ZoneState]) -> None:
         for zone_id, st in states.items():
@@ -1405,7 +1486,24 @@ class HeatWiseController:
         await self.notify(notify_text("report_title", self.language), text)
 
     # -------------------------------------------------------------- evaluation
+    def _sensors_missing(self) -> list[str]:
+        """Configured inputs that have not reported yet (Home Assistant just started)."""
+        missing = []
+        for key in (CONF_OUTDOOR, CONF_HOUSE_SENSOR, CONF_BOILER):
+            eid = self.config.get(key)
+            state = self._state(eid) if eid else None
+            if eid and (state is None or state.state in (STATE_UNAVAILABLE, STATE_UNKNOWN)):
+                missing.append(eid)
+        return missing
+
     async def async_evaluate(self) -> None:
+        if dt_util.utcnow() - self._setup_at < timedelta(seconds=STARTUP_GRACE_SECONDS):
+            missing = self._sensors_missing()
+            if missing:
+                # deciding without them would pick the wrong source for a minute
+                _LOGGER.debug("HeatWise %s: waiting for %s", self.name, ", ".join(missing))
+                self.async_schedule_evaluate(delay=10)
+                return
         self._roll_burner_day()
         c = self.config
         self.anyone_home = self._presence()
@@ -1463,6 +1561,7 @@ class HeatWiseController:
         for zid in states:
             self._learn_heat(zid)
         self._check_windows(states)
+        self._check_ventilation(states)
         plan = engine.evaluate(house_cfg, zone_cfgs, states, house, self._hybrid())
         self.zone_states = states
         if plan.source != self.previous_source or plan.warm_off != self.previous_warm_off:
@@ -1584,6 +1683,7 @@ class HeatWiseController:
             "heat_rates": self.heat_rates,
             "heat_sessions": {k: [v[0].isoformat(), v[1], v[2]] for k, v in self._heat_sessions.items()},
             "preheating": self.preheating,
+            "air_rooms": self.air_rooms,
             "arrival": {
                 "until": self.arrival.until.isoformat() if self.arrival.until else None,
                 "who": self.arrival.who,

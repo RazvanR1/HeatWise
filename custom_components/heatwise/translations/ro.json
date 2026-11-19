@@ -10,6 +10,7 @@
           "house_temp_sensor": "Senzor de temperatură al casei",
           "house_humidity_sensor": "Senzor de umiditate",
           "outdoor_sensor": "Temperatura de afară (senzor sau vreme)",
+          "outdoor_humidity_sensor": "Senzor de umiditate afară",
           "persons": "Persoane",
           "schedule_entity": "Program (pornit = confort, oprit = eco)",
           "window_sensors": "Senzori de fereastră",
@@ -25,7 +26,8 @@
           "persons": "Opțional. Fără persoane, HeatWise consideră că e cineva acasă.",
           "schedule_entity": "Opțional. Merge cel mai bine un ajutor Program (Schedule). Fără el: confort cât e cineva acasă.",
           "language": "Automat urmează limba Home Assistant. Panoul și textele de decizie folosesc limba aleasă.",
-          "house_humidity_sensor": "Opțional. Cu el HeatWise ține casa caldă contra mucegaiului când umiditatea stă mare."
+          "house_humidity_sensor": "Opțional. Cu el HeatWise ține casa caldă contra mucegaiului când umiditatea stă mare.",
+          "outdoor_humidity_sensor": "Opțional. Cu el HeatWise îți spune când deschiderea geamurilor ar usca aerul din casă."
         }
       },
       "equipment": {
@@ -76,6 +78,7 @@
           "house_temp_sensor": "Senzor de temperatură al casei",
           "house_humidity_sensor": "Senzor de umiditate",
           "outdoor_sensor": "Temperatura de afară (senzor sau vreme)",
+          "outdoor_humidity_sensor": "Senzor de umiditate afară",
           "persons": "Persoane",
           "schedule_entity": "Program (pornit = confort, oprit = eco)",
           "window_sensors": "Senzori de fereastră",
@@ -101,7 +104,8 @@
           "window_detect": "Merge și fără senzori de fereastră. Folosește doar senzorii de cameră și termostatul de perete, niciodată citirea unui cap termostatic sau a unui AC.",
           "window_drop": "O cameră încălzită se răcește rar cu mai mult de 0,3–0,5 °C în 10 minute; aerul rece de la o fereastră deschisă o face mult mai repede.",
           "window_hold_minutes": "Încălzirea revine mai devreme imediat ce camera începe să se încălzească din nou (fereastra s-a închis).",
-          "house_humidity_sensor": "Opțional. Cu el HeatWise ține casa caldă contra mucegaiului când umiditatea stă mare."
+          "house_humidity_sensor": "Opțional. Cu el HeatWise ține casa caldă contra mucegaiului când umiditatea stă mare.",
+          "outdoor_humidity_sensor": "Opțional. Cu el HeatWise îți spune când deschiderea geamurilor ar usca aerul din casă."
         }
       },
       "hybrid": {
@@ -115,7 +119,11 @@
           "gas_price_entity": "Senzor preț gaz (per kWh)",
           "gas_price": "Preț gaz per kWh (dacă nu ai senzor)",
           "electricity_price_entity": "Senzor preț curent (per kWh)",
-          "electricity_price": "Preț curent per kWh (dacă nu ai senzor)"
+          "electricity_price": "Preț curent per kWh (dacă nu ai senzor)",
+          "boiler_while_ac": "Restul casei cât încălzesc AC-urile (°C)"
+        },
+        "data_description": {
+          "boiler_while_ac": "Temperatura ținută de termostatul principal cât AC-urile încălzesc camerele lor. Gol: temperatura de plecat. Niciodată peste ce cere programul casei."
         }
       },
       "power": {
@@ -225,12 +233,14 @@
           "mould_protection": "Protecție contra mucegaiului",
           "mould_humidity": "Umiditate mare de la (%)",
           "mould_hours": "Timp de cel puțin (ore)",
-          "mould_min_temp": "Atunci ține camera la cel puțin (°C)"
+          "mould_min_temp": "Atunci ține camera la cel puțin (°C)",
+          "ventilation_advice": "Spune-mi când e bine să aerisesc"
         },
         "data_description": {
           "preheat": "Are nevoie de un helper Program (Schedule). Până măsoară o încălzire, HeatWise presupune 1,5 °C pe oră.",
           "arrival_sensors": "Câte unul pentru fiecare persoană, de ex. sensor.home_alex_distance. Dacă există, se folosește și senzorul de direcție din aceeași intrare Proximity.",
-          "mould_protection": "Are nevoie de senzori de umiditate pe casă sau pe camere. După câteva ore de umiditate mare, HeatWise îți trimite un mesaj să aerisești și nu lasă camera să coboare sub temperatura aleasă, nici când nu e nimeni acasă. Se oprește când umiditatea scade cu 3 %."
+          "mould_protection": "Are nevoie de senzori de umiditate pe casă sau pe camere. După câteva ore de umiditate mare, HeatWise îți trimite un mesaj să aerisești și nu lasă camera să coboare sub temperatura aleasă, nici când nu e nimeni acasă. Se oprește când umiditatea scade cu 3 %.",
+          "ventilation_advice": "Are nevoie de senzorul de umiditate de afară. Când o cameră e peste 60 % și aerul de afară are clar mai puțină apă, primești un mesaj (cel mult o dată la 6 ore, între 8:00 și 22:00, când e cineva acasă)."
         }
       },
       "notify": {
@@ -238,7 +248,7 @@
         "description": "Mesajele merg la serviciile de notificare alese (aplicația de pe telefon, Telegram, notificare persistentă…).",
         "data": {
           "notify_targets": "Trimite la",
-          "notify_window_targets": "Alertele de fereastră se trimit și la",
+          "notify_window_targets": "Trimite alertele de fereastră, umiditate și aerisire și la",
           "notify_window": "Fereastră deschisă",
           "notify_offline": "Termostat, cap sau AC care nu mai răspunde (15 min)",
           "weekly_report": "Raport săptămânal duminica la 19:00 (gaz, curent, cost)"

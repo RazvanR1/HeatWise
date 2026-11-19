@@ -10,6 +10,7 @@
           "house_temp_sensor": "House temperature sensor",
           "house_humidity_sensor": "Humidity sensor",
           "outdoor_sensor": "Outdoor temperature (sensor or weather)",
+          "outdoor_humidity_sensor": "Outdoor humidity sensor",
           "persons": "People",
           "schedule_entity": "Schedule (on = comfort, off = eco)",
           "window_sensors": "Window sensors",
@@ -25,7 +26,8 @@
           "persons": "Optional. Without people HeatWise assumes someone is home.",
           "schedule_entity": "Optional. A Schedule helper works best. Without it: comfort while someone is home.",
           "language": "Automatic follows Home Assistant. The panel and the decision texts use this language.",
-          "house_humidity_sensor": "Optional. With it HeatWise keeps the house warm against mould when the humidity stays high."
+          "house_humidity_sensor": "Optional. With it HeatWise keeps the house warm against mould when the humidity stays high.",
+          "outdoor_humidity_sensor": "Optional. With it HeatWise tells you when opening the windows would dry the house."
         }
       },
       "equipment": {
@@ -76,6 +78,7 @@
           "house_temp_sensor": "House temperature sensor",
           "house_humidity_sensor": "Humidity sensor",
           "outdoor_sensor": "Outdoor temperature (sensor or weather)",
+          "outdoor_humidity_sensor": "Outdoor humidity sensor",
           "persons": "People",
           "schedule_entity": "Schedule (on = comfort, off = eco)",
           "window_sensors": "Window sensors",
@@ -101,7 +104,8 @@
           "window_detect": "Works without window sensors. Uses room sensors and the wall thermostat only, never the reading of a valve or an AC.",
           "window_drop": "A heated room rarely cools more than 0.3–0.5 °C in 10 minutes; cold air from an open window does much more.",
           "window_hold_minutes": "Heating comes back earlier as soon as the room starts warming up again (window closed).",
-          "house_humidity_sensor": "Optional. With it HeatWise keeps the house warm against mould when the humidity stays high."
+          "house_humidity_sensor": "Optional. With it HeatWise keeps the house warm against mould when the humidity stays high.",
+          "outdoor_humidity_sensor": "Optional. With it HeatWise tells you when opening the windows would dry the house."
         }
       },
       "hybrid": {
@@ -115,7 +119,11 @@
           "gas_price_entity": "Gas price sensor (per kWh)",
           "gas_price": "Gas price per kWh (if no sensor)",
           "electricity_price_entity": "Electricity price sensor (per kWh)",
-          "electricity_price": "Electricity price per kWh (if no sensor)"
+          "electricity_price": "Electricity price per kWh (if no sensor)",
+          "boiler_while_ac": "Rest of the house while the ACs heat (°C)"
+        },
+        "data_description": {
+          "boiler_while_ac": "What the main thermostat keeps while the air conditioners heat their rooms. Empty: the away temperature. Never above what the house schedule asks for."
         }
       },
       "power": {
@@ -225,12 +233,14 @@
           "mould_protection": "Protect against mould",
           "mould_humidity": "High humidity from (%)",
           "mould_hours": "For at least (hours)",
-          "mould_min_temp": "Then keep the room at least (°C)"
+          "mould_min_temp": "Then keep the room at least (°C)",
+          "ventilation_advice": "Tell me when it is a good time to air"
         },
         "data_description": {
           "preheat": "Needs a Schedule helper. Until HeatWise has measured a warm-up it assumes 1.5 °C per hour.",
           "arrival_sensors": "One per person, e.g. sensor.home_alex_distance. The direction-of-travel sensor of the same Proximity entry is used when present.",
-          "mould_protection": "Needs humidity sensors on the house or the rooms. After hours of high humidity HeatWise sends a message to air the room and does not let it drop below the temperature you choose, even when nobody is home. It ends when the humidity is 3 % lower."
+          "mould_protection": "Needs humidity sensors on the house or the rooms. After hours of high humidity HeatWise sends a message to air the room and does not let it drop below the temperature you choose, even when nobody is home. It ends when the humidity is 3 % lower.",
+          "ventilation_advice": "Needs the outdoor humidity sensor. When a room is above 60 % and the outside air holds clearly less water, you get a message (at most every 6 hours, 8:00–22:00, when someone is home)."
         }
       },
       "notify": {
@@ -238,7 +248,7 @@
         "description": "Messages go to the notify services you pick (the mobile app, Telegram, persistent notification…).",
         "data": {
           "notify_targets": "Send to",
-          "notify_window_targets": "Also send the window alerts to",
+          "notify_window_targets": "Also send window, humidity and airing alerts to",
           "notify_window": "Window opened",
           "notify_offline": "Thermostat, valve or AC stops responding (15 min)",
           "weekly_report": "Weekly report on Sunday at 19:00 (gas, electricity, cost)"
