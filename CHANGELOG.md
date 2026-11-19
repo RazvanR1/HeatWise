@@ -3,6 +3,7 @@
 ## 0.8.5 - 2026-11-19
 
 - New setting in *House*: the highest temperature the main thermostat may be turned up to when a room with a radiator valve needs heat. Without valves on the other radiators, heating a cold valve room warms the whole house; with this limit the valve room stays a little cooler instead
+- New settings in *Air conditioner and prices*: how far below its target a room starts its AC (0.5 °C) and how far above it stops it (0.3 °C; 0 stops right at the target)
 
 ## 0.8.4 - 2026-11-19
 

@@ -122,10 +122,14 @@
           "gas_price": "Preț gaz per kWh (dacă nu ai senzor)",
           "electricity_price_entity": "Senzor preț curent (per kWh)",
           "electricity_price": "Preț curent per kWh (dacă nu ai senzor)",
-          "boiler_while_ac": "Restul casei cât încălzesc AC-urile (°C)"
+          "boiler_while_ac": "Restul casei cât încălzesc AC-urile (°C)",
+          "ac_start_below": "Pornește AC-ul cu atât sub țintă (°C)",
+          "ac_stop_above": "Oprește AC-ul cu atât peste țintă (°C)"
         },
         "data_description": {
-          "boiler_while_ac": "Temperatura ținută de termostatul principal cât AC-urile încălzesc camerele lor. Gol: temperatura de plecat. Niciodată peste ce cere programul casei."
+          "boiler_while_ac": "Temperatura ținută de termostatul principal cât AC-urile încălzesc camerele lor. Gol: temperatura de plecat. Niciodată peste ce cere programul casei.",
+          "ac_start_below": "AC-ul pornește când camera e cu atât sub țintă. Lasă cel puțin 0,3 ca să nu pornească și să se oprească prea des.",
+          "ac_stop_above": "AC-ul se oprește când camera ajunge la țintă plus atât. 0: se oprește fix la țintă."
         }
       },
       "power": {

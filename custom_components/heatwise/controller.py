@@ -30,6 +30,10 @@ from . import engine
 from .const import (
     CONF_BOILER_WHILE_AC,
     CONF_VALVE_CEILING,
+    CONF_AC_START_BELOW,
+    CONF_AC_STOP_ABOVE,
+    DEFAULT_AC_START_BELOW,
+    DEFAULT_AC_STOP_ABOVE,
     CONF_OUTDOOR_HUMIDITY,
     CONF_VENTILATE,
     STARTUP_GRACE_SECONDS,
@@ -1176,6 +1180,8 @@ class HeatWiseController:
             electricity_price=self._price(CONF_EL_PRICE_ENTITY, CONF_EL_PRICE),
             boiler_efficiency=self.equipment.boiler_efficiency,
             cop_at_7=self.equipment.cop_at_7,
+            ac_hyst_on=float(c.get(CONF_AC_START_BELOW, DEFAULT_AC_START_BELOW)),
+            ac_hyst_off=float(c.get(CONF_AC_STOP_ABOVE, DEFAULT_AC_STOP_ABOVE)),
             valve_ceiling=(
                 float(c[CONF_VALVE_CEILING]) if c.get(CONF_VALVE_CEILING) is not None else None
             ),

@@ -130,6 +130,7 @@ dezactivează automatizările vechi de încălzire și pornește **Control HeatW
 | Nu folosi niciodată AC-ul sub | −15 °C | Sub această temperatură încălzește mereu centrala. |
 | Temperatura maximă pentru restul casei când o cameră cu valvă cere căldură | fără limită | Caloriferele fără valvă încălzesc ori de câte ori centrala merge pentru o cameră cu valvă. Cu o valoare, termostatul principal nu e ridicat niciodată peste ea: camera cu valvă poate rămâne puțin mai rece. |
 | Restul casei cât încălzesc AC-urile | temperatura de plecat | Ce ține termostatul principal cât AC-urile încălzesc camerele lor. Niciodată peste ce cere programul casei. |
+| Pornește / oprește AC-ul sub / peste țintă | 0,5 / 0,3 °C | Când pornește și oprește HeatWise un AC, după senzorul din cameră. 0 la oprire: fix la țintă. |
 | Cu cât setează AC-ul peste țintă | 2 °C | Cât de sus setează HeatWise AC-ul ca să încălzească cu putere; reglajul se face după senzorul din cameră. |
 | Preț gaz / curent | — | Un senzor sau o valoare fixă, per kWh. Gaz facturat în m³: 1 m³ ≈ 10,5 kWh. |
 | Tipul centralei / puterea maximă la încălzire / randamentul (%) | nu știu / — / — | Din fișa tehnică. Randamentul e valoarea la sarcină maximă raportată la Hi (de exemplu 97,5 %); gol = media pentru tip (în condensare 0,93, clasică 0,84, nu știu 0,92, raportat la kWh de pe factura de gaz). Din putere pornește estimarea gazului pe oră de funcționare. |

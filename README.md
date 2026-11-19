@@ -129,6 +129,7 @@ two, then disable your old heating automations and turn **HeatWise control** on.
 | Never use the AC below | −15 °C | Below this the boiler always heats. |
 | Highest temperature for the rest of the house when a valve room needs heat | no limit | Radiators without a valve heat whenever the boiler runs for a valve room. With a value, the main thermostat is never turned up above it: the valve room may stay a little cooler instead. |
 | Rest of the house while the ACs heat | away temperature | What the main thermostat keeps while the ACs heat their rooms. Never above what the house schedule asks for. |
+| Start / stop the AC below / above the target | 0.5 / 0.3 °C | When HeatWise starts and stops an AC, measured by the room sensor. 0 for stop: right at the target. |
 | AC setpoint above the target | 2 °C | How much higher HeatWise sets the AC so it heats with power; regulation is on the room sensor. |
 | Gas / electricity price | — | A sensor or a fixed number, per kWh. Gas billed in m³: 1 m³ ≈ 10.5 kWh. |
 | Boiler type / maximum heating power / efficiency (%) | unknown / — / — | From the datasheet. Efficiency is the full-load value against Hi (e.g. 97.5 %); empty = average for the type (condensing 0.93, conventional 0.84, unknown 0.92, against the kWh on the gas bill). The power gives the first guess of gas per burner hour. |

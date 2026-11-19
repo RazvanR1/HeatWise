@@ -230,3 +230,12 @@ def test_valve_room_does_not_overheat_the_house_past_the_ceiling():
     plan = e.evaluate(house, [kitchen], states, hs, e.HybridConfig(mode=e.HYBRID_BOILER, valve_ceiling=21))
     assert plan.boiler_target == 21
     assert plan.zones["k"].trv_target == 22  # the valve still opens if the boiler runs for the house
+
+
+def test_ac_stops_right_at_the_target_when_asked():
+    from custom_components.heatwise import engine as e
+
+    cfg = e.ZoneConfig("b", "Bedroom", e.Temps(comfort=21, eco=17, away=17), has_ac=True)
+    st = e.ZoneState(room_temp=21.0, schedule_on=True, ac_ours_running=True)
+    assert e._ac_action(cfg, st, 21, e.SOURCE_AC, e.HybridConfig())[0] == e.AC_HEAT
+    assert e._ac_action(cfg, st, 21, e.SOURCE_AC, e.HybridConfig(ac_hyst_off=0))[0] == e.AC_OFF
