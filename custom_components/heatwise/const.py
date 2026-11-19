@@ -31,6 +31,7 @@ CONF_BOILER_WHILE_AC = "boiler_while_ac"
 CONF_VALVE_CEILING = "valve_rooms_house_max"
 CONF_AC_START_BELOW = "ac_start_below"
 CONF_AC_STOP_ABOVE = "ac_stop_above"
+CONF_AC_ONCE = "ac_once_per_period"
 DEFAULT_AC_START_BELOW = 0.5
 DEFAULT_AC_STOP_ABOVE = 0.3
 CONF_OUTDOOR = "outdoor_sensor"

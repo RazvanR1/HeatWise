@@ -734,7 +734,7 @@ async def test_window_alerts_go_to_the_extra_targets_only(hass: HomeAssistant, f
     assert len(mine) == 2 and len(theirs) == 1
 
 
-async def _ac_running(hass: HomeAssistant):
+async def _ac_running(hass: HomeAssistant, **extra):
     _thermostat(hass, BOILER, 21, 19.5)
     _thermostat(hass, AC, 21, 18, state="off", step=1)
     hass.states.async_set("sensor.outdoor", "12", {"unit_of_measurement": "°C", "device_class": "temperature"})
@@ -742,7 +742,7 @@ async def _ac_running(hass: HomeAssistant):
     entry = await _setup(
         hass,
         {
-            "boiler_entity": BOILER, "outdoor_sensor": "sensor.outdoor", **BASE,
+            "boiler_entity": BOILER, "outdoor_sensor": "sensor.outdoor", **BASE, **extra,
             "zones": [{"zone_id": "l1", "zone_name": "Living", "acs": [AC], "temp_sensor": "sensor.living", "trv_follow_boiler": False}],
         },
     )
@@ -909,3 +909,21 @@ async def test_suggests_airing_when_outside_is_drier(hass: HomeAssistant, freeze
     _t(hass, "sensor.outdoor", 18)
     await c.async_evaluate()
     assert c.air_rooms == []  # warm damp air outside would not help
+
+
+async def test_ac_heats_once_per_period(hass: HomeAssistant, freezer) -> None:
+    entry, off = await _ac_running(hass, ac_once_per_period=True, ac_stop_above=0)
+    c = entry.runtime_data
+    hass.states.async_set("sensor.living", "21.0", {"unit_of_measurement": "°C", "device_class": "temperature"})
+    await hass.async_block_till_done()
+    await c.async_evaluate()
+    await hass.async_block_till_done()
+    assert c.plan.zones["l1"].ac_action == "off" and "l1" in c._ac_done
+    _thermostat(hass, AC, 23, 18, state="off", step=1)
+    hass.states.async_set("sensor.living", "19.0", {"unit_of_measurement": "°C", "device_class": "temperature"})
+    await hass.async_block_till_done()
+    await c.async_evaluate()
+    assert c.plan.zones["l1"].ac_action == "none"  # cold again, but done until the period ends
+    freezer.move_to(dt_util.start_of_local_day() + timedelta(days=1, hours=1))
+    await c.async_evaluate()
+    assert c.plan.zones["l1"].ac_action == "heat"

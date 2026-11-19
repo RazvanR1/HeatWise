@@ -124,12 +124,14 @@
           "electricity_price": "Preț curent per kWh (dacă nu ai senzor)",
           "boiler_while_ac": "Restul casei cât încălzesc AC-urile (°C)",
           "ac_start_below": "Pornește AC-ul cu atât sub țintă (°C)",
-          "ac_stop_above": "Oprește AC-ul cu atât peste țintă (°C)"
+          "ac_stop_above": "Oprește AC-ul cu atât peste țintă (°C)",
+          "ac_once_per_period": "Încălzește cu AC-ul o singură dată pe interval"
         },
         "data_description": {
           "boiler_while_ac": "Temperatura ținută de termostatul principal cât AC-urile încălzesc camerele lor. Gol: temperatura de plecat. Niciodată peste ce cere programul casei.",
           "ac_start_below": "AC-ul pornește când camera e cu atât sub țintă. Lasă cel puțin 0,3 ca să nu pornească și să se oprească prea des.",
-          "ac_stop_above": "AC-ul se oprește când camera ajunge la țintă plus atât. 0: se oprește fix la țintă."
+          "ac_stop_above": "AC-ul se oprește când camera ajunge la țintă plus atât. 0: se oprește fix la țintă.",
+          "ac_once_per_period": "Când camera ajunge la țintă, AC-ul ei rămâne oprit până la următorul interval din program (dimineața sau seara următoare), chiar dacă între timp camera se răcește."
         }
       },
       "power": {

@@ -124,12 +124,14 @@
           "electricity_price": "Electricity price per kWh (if no sensor)",
           "boiler_while_ac": "Rest of the house while the ACs heat (°C)",
           "ac_start_below": "Start the AC this much below the target (°C)",
-          "ac_stop_above": "Stop the AC this much above the target (°C)"
+          "ac_stop_above": "Stop the AC this much above the target (°C)",
+          "ac_once_per_period": "Heat with the AC once per schedule period"
         },
         "data_description": {
           "boiler_while_ac": "What the main thermostat keeps while the air conditioners heat their rooms. Empty: the away temperature. Never above what the house schedule asks for.",
           "ac_start_below": "The AC starts when the room is this much below its target. Keep it at least 0.3 so the AC does not start and stop too often.",
-          "ac_stop_above": "The AC stops when the room reaches its target plus this. 0: it stops right at the target."
+          "ac_stop_above": "The AC stops when the room reaches its target plus this. 0: it stops right at the target.",
+          "ac_once_per_period": "When a room reaches its target, its AC stays off until the next period of its schedule (the next morning or evening), even if the room cools down meanwhile."
         }
       },
       "power": {

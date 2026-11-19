@@ -239,3 +239,13 @@ def test_ac_stops_right_at_the_target_when_asked():
     st = e.ZoneState(room_temp=21.0, schedule_on=True, ac_ours_running=True)
     assert e._ac_action(cfg, st, 21, e.SOURCE_AC, e.HybridConfig())[0] == e.AC_HEAT
     assert e._ac_action(cfg, st, 21, e.SOURCE_AC, e.HybridConfig(ac_hyst_off=0))[0] == e.AC_OFF
+
+
+def test_ac_does_not_start_again_once_done_for_the_period():
+    from custom_components.heatwise import engine as e
+
+    cfg = e.ZoneConfig("b", "Bedroom", e.Temps(comfort=21, eco=17, away=17), has_ac=True)
+    cold = e.ZoneState(room_temp=19.0, schedule_on=True, ac_done=True)
+    assert e._ac_action(cfg, cold, 21, e.SOURCE_AC, e.HybridConfig())[0] == e.AC_NONE
+    running = e.ZoneState(room_temp=19.0, schedule_on=True, ac_done=True, ac_ours_running=True)
+    assert e._ac_action(cfg, running, 21, e.SOURCE_AC, e.HybridConfig())[0] == e.AC_OFF

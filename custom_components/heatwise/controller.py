@@ -32,6 +32,7 @@ from .const import (
     CONF_VALVE_CEILING,
     CONF_AC_START_BELOW,
     CONF_AC_STOP_ABOVE,
+    CONF_AC_ONCE,
     DEFAULT_AC_START_BELOW,
     DEFAULT_AC_STOP_ABOVE,
     CONF_OUTDOOR_HUMIDITY,
@@ -233,6 +234,8 @@ class HeatWiseController:
         self._humid_since: dict[str, datetime] = {}
         self.mould_risk: dict[str, bool] = {}
         self.air_rooms: list[str] = []
+        # zone id -> end of the schedule period in which its AC already reached the target
+        self._ac_done: dict[str, datetime] = {}
         self._vent_last: datetime | None = None
         self._setup_at = dt_util.utcnow()
         self.preheating: dict[str, bool] = {}
@@ -359,6 +362,10 @@ class HeatWiseController:
             if item.get("risk"):
                 self.mould_risk[zid] = True
         self._vent_last = dt_util.parse_datetime(data.get("vent_last") or "")
+        for zid, until in data.get("ac_done", {}).items():
+            when = dt_util.parse_datetime(until or "")
+            if when is not None:
+                self._ac_done[zid] = when
         self._setup_at = dt_util.utcnow()
 
         self._unsubs.append(
@@ -435,6 +442,7 @@ class HeatWiseController:
                 for zid in set(self._humid_since) | {z for z, on in self.mould_risk.items() if on}
             },
             "vent_last": self._vent_last.isoformat() if self._vent_last else None,
+            "ac_done": {zid: when.isoformat() for zid, when in self._ac_done.items()},
             "periods_version": 2,
             "gas": {
                 "total_m3": self.gas_total_live,
@@ -1217,6 +1225,44 @@ class HeatWiseController:
             min_temp=self._mould_floor(zone_id, humidity),
         )
 
+    def _period_end(self, schedule: str | None) -> datetime:
+        """When the current schedule period ends (local midnight without a schedule)."""
+        state = self._state(schedule)
+        if state is not None:
+            next_event = state.attributes.get("next_event")
+            if isinstance(next_event, str):
+                next_event = dt_util.parse_datetime(next_event)
+            if isinstance(next_event, datetime):
+                return dt_util.as_utc(next_event)
+        midnight = dt_util.start_of_local_day() + timedelta(days=1)
+        return dt_util.as_utc(midnight)
+
+    def _ac_done_now(self, zone_id: str) -> bool:
+        if not self.config.get(CONF_AC_ONCE, False):
+            self._ac_done.clear()
+            return False
+        until = self._ac_done.get(zone_id)
+        if until is not None and dt_util.utcnow() < until:
+            return True
+        if until is not None:
+            del self._ac_done[zone_id]
+            self._save()
+        return False
+
+    def _note_ac_done(self, plan: engine.Plan, states: dict[str, engine.ZoneState]) -> None:
+        """An AC switched off because its room reached the target: done until the period ends."""
+        if not self.config.get(CONF_AC_ONCE, False):
+            return
+        for zone in self.zones:
+            zid = zone[CONF_ZONE_ID]
+            zp, st = plan.zones.get(zid), states.get(zid)
+            if not zone.get(CONF_ZONE_ACS) or zp is None or st is None or zid in self._ac_done:
+                continue
+            reached = st.room_temp is not None and st.room_temp >= zp.target
+            if st.ac_ours_running and zp.ac_action == engine.AC_OFF and reached and plan.source == engine.SOURCE_AC:
+                self._ac_done[zid] = self._period_end(zone.get(CONF_SCHEDULE) or self.config.get(CONF_SCHEDULE))
+                self._save()
+
     def _comfort_ending(self, schedule: str | None) -> bool:
         """True when a schedule that is on turns off within a few minutes."""
         state = self._state(schedule)
@@ -1554,6 +1600,7 @@ class HeatWiseController:
             )
             st.ac_ours_running, st.ac_user_controlled = self._ac_flags(zone)
             st.comfort_ending = self._comfort_ending(zone.get(CONF_SCHEDULE) or c.get(CONF_SCHEDULE))
+            st.ac_done = self._ac_done_now(zid)
             previous = self.plan.zones.get(zid) if self.plan else None
             st.prev_demand = bool(previous and previous.demand)
             states[zid] = st
@@ -1573,6 +1620,7 @@ class HeatWiseController:
         self._check_windows(states)
         self._check_ventilation(states)
         plan = engine.evaluate(house_cfg, zone_cfgs, states, house, self._hybrid())
+        self._note_ac_done(plan, states)
         self.zone_states = states
         if plan.source != self.previous_source or plan.warm_off != self.previous_warm_off:
             _LOGGER.info(
