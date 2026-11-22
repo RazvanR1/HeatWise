@@ -33,6 +33,9 @@ from .const import (
     CONF_AC_START_BELOW,
     CONF_AC_STOP_ABOVE,
     CONF_AC_ONCE,
+    CONF_METER_REMINDER,
+    DEFAULT_METER_REMINDER,
+    HDD_BASE,
     DEFAULT_AC_START_BELOW,
     DEFAULT_AC_STOP_ABOVE,
     CONF_OUTDOOR_HUMIDITY,
@@ -234,6 +237,8 @@ class HeatWiseController:
         self._humid_since: dict[str, datetime] = {}
         self.mould_risk: dict[str, bool] = {}
         self.air_rooms: list[str] = []
+        self._hdd_at: datetime | None = None
+        self._meter_reminded: datetime | None = None
         # zone id -> end of the schedule period in which its AC already reached the target
         self._ac_done: dict[str, datetime] = {}
         self._vent_last: datetime | None = None
@@ -362,6 +367,7 @@ class HeatWiseController:
             if item.get("risk"):
                 self.mould_risk[zid] = True
         self._vent_last = dt_util.parse_datetime(data.get("vent_last") or "")
+        self._meter_reminded = dt_util.parse_datetime(data.get("meter_reminded") or "")
         for zid, until in data.get("ac_done", {}).items():
             when = dt_util.parse_datetime(until or "")
             if when is not None:
@@ -443,6 +449,7 @@ class HeatWiseController:
             },
             "vent_last": self._vent_last.isoformat() if self._vent_last else None,
             "ac_done": {zid: when.isoformat() for zid, when in self._ac_done.items()},
+            "meter_reminded": self._meter_reminded.isoformat() if self._meter_reminded else None,
             "periods_version": 2,
             "gas": {
                 "total_m3": self.gas_total_live,
@@ -804,6 +811,7 @@ class HeatWiseController:
             "dhw_m3": 0.0,
             "dhw_cost": 0.0,
             "dhw_h": 0.0,
+            "hdd": 0.0,
         }
 
     @staticmethod
@@ -1520,13 +1528,58 @@ class HeatWiseController:
                 self._offline_notified.discard(eid)
                 await self.notify(notify_text("offline_title", lang), notify_text("online", lang, device=name))
 
+    def efficiency(self, values: dict[str, float] | None = None) -> float | None:
+        """Burner hours for heating per heating degree-day (lower is better)."""
+        if values is None:
+            values = {m: self.period_value(m, "week") for m in ("burner_h", "dhw_h", "hdd")}
+        hdd = values.get("hdd", 0.0)
+        if hdd < 1:
+            return None
+        hours = values.get("burner_h", 0.0)
+        if self.split_hot_water:
+            hours -= values.get("dhw_h", 0.0)
+        return round(max(hours, 0.0) / hdd, 3)
+
+    @callback
+    def _add_degree_days(self) -> None:
+        """Count how cold it was, so weeks with different weather can be compared."""
+        now = dt_util.utcnow()
+        outdoor = self._outdoor()
+        if self._hdd_at is not None and outdoor is not None:
+            seconds = min((now - self._hdd_at).total_seconds(), 600)
+            if seconds > 0:
+                self._add_period("hdd", max(0.0, HDD_BASE - outdoor) * seconds / 86400)
+        self._hdd_at = now
+
+    async def _check_meter_reminder(self) -> None:
+        days = int(self.config.get(CONF_METER_REMINDER, DEFAULT_METER_REMINDER))
+        if days <= 0 or not self.has_power or not self.config.get(CONF_NOTIFY):
+            return
+        now = dt_util.utcnow()
+        last = None
+        if self.last_manual_reading:
+            last = dt_util.parse_datetime(self.last_manual_reading[1])
+        if last is not None and now - last < timedelta(days=days):
+            return
+        if self._meter_reminded is not None and now - self._meter_reminded < timedelta(days=days):
+            return
+        self._meter_reminded = now
+        self._save()
+        await self.notify(
+            notify_text("meter_title", self.language),
+            notify_text("meter", self.language, days=days),
+        )
+
     async def _on_report_time(self, now: datetime) -> None:
+        await self._check_meter_reminder()
         if dt_util.as_local(now).weekday() != REPORT_WEEKDAY:
             return
         await self.async_send_weekly_report()
 
-    async def async_send_weekly_report(self) -> None:
-        if not self.config.get(CONF_WEEKLY_REPORT, True) or not self.config.get(CONF_NOTIFY):
+    async def async_send_weekly_report(self, force: bool = False) -> None:
+        if not self.config.get(CONF_NOTIFY):
+            return
+        if not force and not self.config.get(CONF_WEEKLY_REPORT, True):
             return
         self._roll_periods()
         week = {m: self.period_value(m, "week") for m in self._empty_period()}
@@ -1538,6 +1591,8 @@ class HeatWiseController:
             self.has_power,
             self.has_ac_power,
             self.split_hot_water,
+            efficiency=self.efficiency(week),
+            last_efficiency=self.efficiency(self.last_week) if self.last_week else None,
         )
         await self.notify(notify_text("report_title", self.language), text)
 
@@ -1561,6 +1616,7 @@ class HeatWiseController:
                 self.async_schedule_evaluate(delay=10)
                 return
         self._roll_burner_day()
+        self._add_degree_days()
         c = self.config
         self.anyone_home = self._presence()
         arriving = self._arriving()

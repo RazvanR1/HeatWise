@@ -1,7 +1,7 @@
 # 🌡️ HeatWise – încălzire inteligentă și hibridă pentru Home Assistant
 
 [![Deschide Home Assistant și arată acest repository în HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
-![Version](https://img.shields.io/badge/version-0.8.5-blue)
+![Version](https://img.shields.io/badge/version-0.9.0-blue)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 ![Local only](https://img.shields.io/badge/cloud-none-success)
 [![Tests](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml/badge.svg)](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml)
@@ -124,7 +124,8 @@ dezactivează automatizările vechi de încălzire și pornește **Control HeatW
 | Protecție contra mucegaiului | pornit, 65 %, 2 h, 19 °C | Are nevoie de un senzor de umiditate pe cameră (sau pe casă). După atâta timp peste acea umiditate: mesaj să aerisești, iar camera stă cel puțin atât de caldă până scade umiditatea cu 3 %. |
 | Trimite la | — | Serviciile de notificare pentru mesaje, de exemplu `notify.mobile_app_telefon`. |
 | Alertele de fereastră se trimit și la | — | Servicii de notificare care primesc doar mesajele de fereastră deschisă, de exemplu telefonul altcuiva din casă. |
-| Fereastră deschisă / dispozitiv care nu răspunde / raport săptămânal | pornit / pornit / pornit | Ce mesaje să trimită. Raportul pleacă duminica la 19:00. |
+| Fereastră deschisă / dispozitiv care nu răspunde / raport săptămânal | pornit / pornit / pornit | Ce mesaje să trimită. Raportul pleacă duminica la 19:00, cu eficiența încălzirii față de săptămâna trecută. |
+| Amintește-mi să citesc contorul de gaz la fiecare | 14 zile | Un mesaj la 19:00 când n-a fost introdus niciun index de atâta timp. 0: oprit. |
 | Sursa de căldură | Automat | Automat, doar centrala sau doar AC. |
 | Folosește AC-ul peste | 8 °C | Pragul de temperatură exterioară când prețurile nu sunt cunoscute. |
 | Nu folosi niciodată AC-ul sub | −15 °C | Sub această temperatură încălzește mereu centrala. |
@@ -162,6 +163,8 @@ dezactivează automatizările vechi de încălzire și pornește **Control HeatW
 | `sensor.…_hot_water_gas_today` / `…_this_month` / `…_this_year` și `…_hot_water_cost_…` | Gazul și costul apei calde (centrală mixtă cu termostat principal). |
 | `sensor.…_heating_cost_today` / `…_this_month` / `…_this_year` | Gazul pentru încălzire și AC împreună; apa caldă e lăsată deoparte când e numărată separat. |
 | `number.…_gas_meter_reading` | Scrii indexul contorului de gaz oricând îl citești; fiecare citire corectează estimarea. E și în panou. |
+| `sensor.…_heating_efficiency` | Ore de arzător pentru încălzire pe grad-zi în săptămâna asta (sub 18 °C afară). Mai puțin e mai bine; compară săptămâni cu vreme diferită. Atribute: grade-zile și săptămâna trecută. Are nevoie de priză pe centrală și senzor de afară. |
+| `button.…_send_weekly_report` | Trimite raportul săptămânal acum. |
 | `sensor.…_gas_per_burner_hour` | Câți m³ pe oră de funcționare folosește acum și dacă i-a învățat din contor. |
 | `binary_sensor.…_anyone_home` | Prezența așa cum o vede HeatWise (doar cu persoane). |
 | `switch.…_heatwise_control` | Oprit = doar observă. |

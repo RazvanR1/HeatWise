@@ -1,7 +1,7 @@
 # 🌡️ HeatWise – smart hybrid heating for Home Assistant
 
 [![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RazvanR1&repository=HeatWise&category=integration)
-![Version](https://img.shields.io/badge/version-0.8.5-blue)
+![Version](https://img.shields.io/badge/version-0.9.0-blue)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 ![Local only](https://img.shields.io/badge/cloud-none-success)
 [![Tests](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml/badge.svg)](https://github.com/RazvanR1/HeatWise/actions/workflows/tests.yml)
@@ -123,7 +123,8 @@ two, then disable your old heating automations and turn **HeatWise control** on.
 | Protect against mould | on, 65 %, 2 h, 19 °C | Needs a humidity sensor on the room (or the house). After that long above that humidity: a message to air the room, and the room stays at least that warm until the humidity is 3 % lower. |
 | Send to | — | Notify services for the messages, e.g. `notify.mobile_app_phone`. |
 | Also send the window alerts to | — | Notify services that get only the window messages, e.g. the phone of someone else at home. |
-| Window opened / device stops responding / weekly report | on / on / on | Which messages to send. The report goes out on Sunday at 19:00. |
+| Window opened / device stops responding / weekly report | on / on / on | Which messages to send. The report goes out on Sunday at 19:00, with the heating efficiency against last week. |
+| Remind me to read the gas meter every | 14 days | A message at 19:00 when no gas meter reading was entered for that long. 0: off. |
 | Heat source | Automatic | Automatic, boiler only or AC only. |
 | Use the AC above | 8 °C | Outdoor threshold used when prices are not known. |
 | Never use the AC below | −15 °C | Below this the boiler always heats. |
@@ -161,6 +162,8 @@ two, then disable your old heating automations and turn **HeatWise control** on.
 | `sensor.…_hot_water_gas_today` / `…_this_month` / `…_this_year` and `…_hot_water_cost_…` | Gas and cost of the hot water (combi boiler with a main thermostat). |
 | `sensor.…_heating_cost_today` / `…_this_month` / `…_this_year` | Gas for heating and AC together; the hot water is left out when it is counted apart. |
 | `number.…_gas_meter_reading` | Type the index of the gas meter whenever you read it; every reading corrects the gas estimate. Also in the panel. |
+| `sensor.…_heating_efficiency` | Burner hours for heating per heating degree-day this week (below 18 °C outside). Lower is better; compares weeks with different weather. Attributes: degree-days and last week. Needs a boiler power plug and an outdoor sensor. |
+| `button.…_send_weekly_report` | Sends the weekly report now. |
 | `sensor.…_gas_per_burner_hour` | The m³ per burner hour in use, and whether it was learned from the meter. |
 | `binary_sensor.…_anyone_home` | Presence as HeatWise sees it (only with people). |
 | `switch.…_heatwise_control` | Off = observe only. |

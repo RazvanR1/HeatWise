@@ -97,3 +97,11 @@ def test_rooms_to_air():
     assert names == ["Kitchen"] and outside < inside
     assert rooms_to_air(rooms, 20, 90, 60, 2)[0] == []
     assert rooms_to_air(rooms, None, 80, 60, 2)[0] == []
+
+
+def test_weekly_report_shows_efficiency() -> None:
+    text = weekly_report({"gas_m3": 10, "gas_cost": 30, "burner_h": 12}, {"gas_cost": 35}, "ro", "RON",
+                         True, False, efficiency=0.28, last_efficiency=0.35)
+    assert "0,28 ore de arzător pe grad-zi" in text and "0,35" in text and "-20 %" in text
+    text = weekly_report({"gas_m3": 10, "gas_cost": 30, "burner_h": 12}, None, "en", "RON", True, False, efficiency=0.3)
+    assert "0.30 burner hours per degree-day (lower is better)" in text

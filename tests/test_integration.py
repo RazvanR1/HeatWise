@@ -927,3 +927,39 @@ async def test_ac_heats_once_per_period(hass: HomeAssistant, freezer) -> None:
     freezer.move_to(dt_util.start_of_local_day() + timedelta(days=1, hours=1))
     await c.async_evaluate()
     assert c.plan.zones["l1"].ac_action == "heat"
+
+
+async def test_degree_days_efficiency_report_button_and_meter_reminder(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(dt_util.start_of_local_day() + timedelta(hours=10))
+    _thermostat(hass, BOILER, 21, 20.0)
+    hass.states.async_set("sensor.boiler_power", "4", {"unit_of_measurement": "W", "device_class": "power"})
+    hass.states.async_set("sensor.outdoor", "6", {"unit_of_measurement": "°C", "device_class": "temperature"})
+    entry = await _setup(
+        hass,
+        {
+            **BASE, "boiler_entity": BOILER, "outdoor_sensor": "sensor.outdoor",
+            "boiler_power_sensor": "sensor.boiler_power", "burner_threshold": 30,
+            "notify_targets": ["notify.phone"], "meter_reminder_days": 14,
+        },
+    )
+    sent = async_mock_service(hass, "notify", "phone")
+    async_mock_service(hass, "climate", "set_temperature")
+    c = entry.runtime_data
+    for _ in range(14):  # over two hours, 12 °C below the base
+        freezer.tick(timedelta(minutes=10))
+        await c.async_evaluate()
+    hdd = c.period_value("hdd", "week")
+    assert 1.0 < hdd <= 1.17  # the first evaluation only starts the count
+    c._add_period("burner_h", 0.5)
+    assert c.efficiency() is not None and abs(c.efficiency() - 0.5 / hdd) < 0.01
+    await hass.services.async_call("button", "press", {"entity_id": "button.heatwise_home_send_weekly_report"}, blocking=True)
+    await hass.async_block_till_done()
+    assert any("degree-day" in call.data["message"] for call in sent)
+    before = len(sent)
+    await c._on_report_time(dt_util.utcnow())  # never read the meter: remind
+    await hass.async_block_till_done()
+    assert any("meter" in call.data["title"].lower() for call in sent[before:])
+    before = len(sent)
+    await c._on_report_time(dt_util.utcnow() + timedelta(days=1))  # not again for 14 days
+    await hass.async_block_till_done()
+    assert not any("meter" in call.data["title"].lower() for call in sent[before:])

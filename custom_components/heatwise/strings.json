@@ -259,10 +259,12 @@
           "notify_window_targets": "Also send window, humidity and airing alerts to",
           "notify_window": "Window opened",
           "notify_offline": "Thermostat, valve or AC stops responding (15 min)",
-          "weekly_report": "Weekly report on Sunday at 19:00 (gas, electricity, cost)"
+          "weekly_report": "Weekly report on Sunday at 19:00 (gas, electricity, cost)",
+          "meter_reminder_days": "Remind me to read the gas meter every (days)"
         },
         "data_description": {
-          "notify_window_targets": "Only the window messages go here, e.g. the phone of someone else at home. The targets above get every message."
+          "notify_window_targets": "Only the window messages go here, e.g. the phone of someone else at home. The targets above get every message.",
+          "meter_reminder_days": "A message when no gas meter reading was entered for this many days, at 19:00. 0: off."
         }
       }
     },
@@ -404,6 +406,9 @@
       },
       "hot_water_cost_year": {
         "name": "Hot water cost this year"
+      },
+      "efficiency": {
+        "name": "Heating efficiency"
       }
     },
     "binary_sensor": {
@@ -425,6 +430,11 @@
     "number": {
       "gas_meter_reading": {
         "name": "Gas meter reading"
+      }
+    },
+    "button": {
+      "send_report": {
+        "name": "Send weekly report"
       }
     }
   },

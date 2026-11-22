@@ -58,6 +58,8 @@ from .const import (
     CONF_AC_START_BELOW,
     CONF_AC_STOP_ABOVE,
     CONF_AC_ONCE,
+    CONF_METER_REMINDER,
+    DEFAULT_METER_REMINDER,
     DEFAULT_AC_START_BELOW,
     DEFAULT_AC_STOP_ABOVE,
     CONF_OUTDOOR_HUMIDITY,
@@ -314,6 +316,7 @@ def notify_schema(values: dict[str, Any], services: list[str]) -> vol.Schema:
             vol.Required(CONF_NOTIFY_WINDOW, default=values.get(CONF_NOTIFY_WINDOW, True)): selector.BooleanSelector(),
             vol.Required(CONF_NOTIFY_OFFLINE, default=values.get(CONF_NOTIFY_OFFLINE, True)): selector.BooleanSelector(),
             vol.Required(CONF_WEEKLY_REPORT, default=values.get(CONF_WEEKLY_REPORT, True)): selector.BooleanSelector(),
+            _req(CONF_METER_REMINDER, values, DEFAULT_METER_REMINDER): _number(0, 90, 1),
         }
     )
 

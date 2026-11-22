@@ -21,7 +21,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from . import HeatWiseConfigEntry, engine
-from .const import HOUSE_ZONE_ID, PERIODS
+from .const import CONF_OUTDOOR, HDD_BASE, HOUSE_ZONE_ID, PERIODS
 from .entity import HeatWiseEntity
 
 
@@ -47,6 +47,8 @@ async def async_setup_entry(
         entities += [PeriodSensor(controller, "ac_cost", p) for p in PERIODS]
     if controller.has_power or controller.has_ac_power:
         entities += [PeriodSensor(controller, "heating_cost", p) for p in PERIODS]
+    if controller.has_power and controller.config.get(CONF_OUTDOOR):
+        entities.append(EfficiencySensor(controller))
     async_add_entities(entities)
 
 
@@ -93,6 +95,35 @@ class DecisionSensor(HeatWiseEntity, SensorEntity):
                 self.controller.zone_name(zid): engine.explain(zp.reason, self.controller.language)
                 for zid, zp in plan.zones.items()
             },
+        }
+
+
+class EfficiencySensor(HeatWiseEntity, SensorEntity):
+    """Burner hours for heating per heating degree-day this week: lower is better."""
+
+    _attr_translation_key = "efficiency"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = "h/°C·d"
+    _attr_suggested_display_precision = 2
+    _attr_icon = "mdi:speedometer"
+
+    def __init__(self, controller) -> None:
+        super().__init__(controller, HOUSE_ZONE_ID, "efficiency")
+
+    @property
+    def native_value(self) -> float | None:
+        return self.controller.efficiency()
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        c = self.controller
+        last = c.last_week or {}
+        return {
+            "degree_days_this_week": round(c.period_value("hdd", "week"), 1),
+            "degree_days_today": round(c.period_value("hdd", "today"), 1),
+            "last_week": c.efficiency(last) if last else None,
+            "degree_days_last_week": round(last.get("hdd", 0.0), 1) if last else None,
+            "base_temperature": HDD_BASE,
         }
 
 

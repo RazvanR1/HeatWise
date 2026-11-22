@@ -224,6 +224,10 @@ MESSAGES = {
         "mould_alert": "Humidity has been {rh}% in {zone} for {hours} h. Air the room for 5–10 minutes with the window wide open.",
         "vent_title": "HeatWise: good time to air",
         "vent": "The air outside is drier ({out} g/m³ of water against {inside} g/m³ in {zones}). Open the windows wide for 5–10 minutes, then close them.",
+        "meter_title": "HeatWise: gas meter reading",
+        "meter": "No gas meter reading for {days} days. Enter the index in HeatWise (Gas meter reading) so the gas use stays accurate.",
+        "report_eff": "Efficiency: {eff} burner hours per degree-day (lower is better)",
+        "report_eff_last": "Efficiency: {eff} burner hours per degree-day, last week {last} ({change})",
         "report_title": "HeatWise: this week",
         "report_gas": "Gas: {m3} m³ ({cost} {cur}), burner {hours} h",
         "report_gas_heating": "Gas for heating: {m3} m³ ({cost} {cur}), burner {hours} h",
@@ -247,6 +251,10 @@ MESSAGES = {
         "mould_alert": "Umiditatea e {rh}% în {zone} de {hours} h. Aerisește 5–10 minute cu geamul larg deschis.",
         "vent_title": "HeatWise: e momentul să aerisești",
         "vent": "Aerul de afară e mai uscat ({out} g/m³ apă față de {inside} g/m³ în {zones}). Deschide geamurile larg 5–10 minute, apoi închide-le.",
+        "meter_title": "HeatWise: indexul de gaz",
+        "meter": "Nicio citire a contorului de gaz de {days} zile. Trece indexul în HeatWise (Index contor gaz), ca să rămână corect consumul.",
+        "report_eff": "Eficiență: {eff} ore de arzător pe grad-zi (mai puțin e mai bine)",
+        "report_eff_last": "Eficiență: {eff} ore de arzător pe grad-zi, săptămâna trecută {last} ({change})",
         "report_title": "HeatWise: săptămâna aceasta",
         "report_gas": "Gaz: {m3} m³ ({cost} {cur}), arzătorul a mers {hours} h",
         "report_gas_heating": "Gaz pentru încălzire: {m3} m³ ({cost} {cur}), arzătorul a mers {hours} h",
@@ -272,6 +280,8 @@ def weekly_report(
     has_gas: bool,
     has_ac: bool,
     has_hot_water: bool = False,
+    efficiency: float | None = None,
+    last_efficiency: float | None = None,
 ) -> str:
     """Text of the Sunday report. With the hot water split, gas lines are heating only."""
     lang = lang[:2].lower()
@@ -305,6 +315,14 @@ def weekly_report(
                 cur=currency,
             )
         )
+    if efficiency is not None:
+        if last_efficiency:
+            change = (efficiency - last_efficiency) / last_efficiency * 100
+            lines.append(notify_text("report_eff_last", lang, eff=_num(efficiency, lang, 2),
+                                     last=_num(last_efficiency, lang, 2),
+                                     change=("+" if change > 0 else "") + _num(change, lang, 0) + " %"))
+        else:
+            lines.append(notify_text("report_eff", lang, eff=_num(efficiency, lang, 2)))
     if has_ac:
         lines.append(
             notify_text(

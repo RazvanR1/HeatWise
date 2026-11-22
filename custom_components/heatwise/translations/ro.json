@@ -259,10 +259,12 @@
           "notify_window_targets": "Trimite alertele de fereastră, umiditate și aerisire și la",
           "notify_window": "Fereastră deschisă",
           "notify_offline": "Termostat, cap sau AC care nu mai răspunde (15 min)",
-          "weekly_report": "Raport săptămânal duminica la 19:00 (gaz, curent, cost)"
+          "weekly_report": "Raport săptămânal duminica la 19:00 (gaz, curent, cost)",
+          "meter_reminder_days": "Amintește-mi să citesc contorul de gaz la fiecare (zile)"
         },
         "data_description": {
-          "notify_window_targets": "Aici merg doar mesajele de fereastră deschisă, de exemplu pe telefonul altcuiva din casă. Destinatarii de mai sus primesc toate mesajele."
+          "notify_window_targets": "Aici merg doar mesajele de fereastră deschisă, de exemplu pe telefonul altcuiva din casă. Destinatarii de mai sus primesc toate mesajele.",
+          "meter_reminder_days": "Un mesaj la 19:00 când n-a fost introdus niciun index de gaz de atâtea zile. 0: oprit."
         }
       }
     },
@@ -404,6 +406,9 @@
       },
       "hot_water_cost_year": {
         "name": "Cost apă caldă anul acesta"
+      },
+      "efficiency": {
+        "name": "Eficiența încălzirii"
       }
     },
     "binary_sensor": {
@@ -425,6 +430,11 @@
     "number": {
       "gas_meter_reading": {
         "name": "Index contor gaz"
+      }
+    },
+    "button": {
+      "send_report": {
+        "name": "Trimite raportul săptămânal"
       }
     }
   },

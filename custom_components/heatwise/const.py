@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 DOMAIN = "heatwise"
-PLATFORMS = ["climate", "sensor", "binary_sensor", "switch", "number"]
+PLATFORMS = ["climate", "sensor", "binary_sensor", "switch", "number", "button"]
 
 HOUSE_ZONE_ID = "house"
 
@@ -32,6 +32,9 @@ CONF_VALVE_CEILING = "valve_rooms_house_max"
 CONF_AC_START_BELOW = "ac_start_below"
 CONF_AC_STOP_ABOVE = "ac_stop_above"
 CONF_AC_ONCE = "ac_once_per_period"
+CONF_METER_REMINDER = "meter_reminder_days"
+DEFAULT_METER_REMINDER = 14  # 0: off
+HDD_BASE = 18.0  # heating degree-days are counted below this outdoor temperature
 DEFAULT_AC_START_BELOW = 0.5
 DEFAULT_AC_STOP_ABOVE = 0.3
 CONF_OUTDOOR = "outdoor_sensor"

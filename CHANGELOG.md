@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.0 - 2026-11-22
+
+- Heating efficiency: burner hours for heating per heating degree-day, as a sensor and in the weekly report against last week, so weeks with different weather can be compared
+- Button to send the weekly report now
+- Reminder to read the gas meter (every 14 days by default, 0 turns it off)
+
 ## 0.8.5 - 2026-11-19
 
 - New setting in *House*: the highest temperature the main thermostat may be turned up to when a room with a radiator valve needs heat. Without valves on the other radiators, heating a cold valve room warms the whole house; with this limit the valve room stays a little cooler instead
